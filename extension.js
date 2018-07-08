@@ -286,6 +286,8 @@ function commandSetup() {
     }).then(function(accessKeyResponse){
         config['accessKey'] = accessKeyResponse; // TODO: reject empty response
 
+        if (!accessKeyResponse) return;
+
         return vscode.window.showInputBox({
             prompt: "Your AWS secret key for authenticating to the environment.",
             value: extensionConfig.inspect('secretKey').globalValue,
@@ -294,6 +296,8 @@ function commandSetup() {
     }).then(function(secretKeyResponse){
         config['secretKey'] = secretKeyResponse;
 
+        if (!secretKeyResponse) return;
+
         return vscode.window.showInputBox({
             placeHolder: "us-west-2",
             prompt: "Specifies the AWS Cloud9 region.",
@@ -301,9 +305,14 @@ function commandSetup() {
             ignoreFocusOut: true
         });
     }).then(function(regionReponse){
+        if (!regionReponse) return;
+
         extensionConfig.update("accessKey", config['accessKey'], vscode.ConfigurationTarget.Global);
         extensionConfig.update("secretKey", config['secretKey'], vscode.ConfigurationTarget.Global);
         extensionConfig.update("region", regionReponse, vscode.ConfigurationTarget.Global);
+
+        vscode.window.setStatusBarMessage('Refreshing environments...', 5000);
+        refreshEnvironmentsInSidebar();
     });
 }
 
@@ -668,6 +677,10 @@ function setEventEmitterEvents() {
 function refreshEnvironmentsInSidebar() {
     extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
     awsregion = extensionConfig.get('region');
+
+    if (!extensionConfig.get('accessKey') || !extensionConfig.get('secretKey')) {
+        return;
+    }
     
     environmentProvider.clearAll();
 
