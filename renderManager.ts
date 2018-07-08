@@ -38,7 +38,7 @@ export class RenderManager {
 			},
 			rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 		});
-		
+		// TODO: Fix missing cap when at end of file
 		this.cursortopdecorator = vscode.window.createTextEditorDecorationType({
             before: {
                 color: 'rgba(' + this.color.r.toString() + ',' + this.color.g.toString() + ',' + this.color.b.toString() + ',1)',

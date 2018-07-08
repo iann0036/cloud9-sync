@@ -285,7 +285,7 @@ function commandSetup() {
         value: extensionConfig.inspect('accessKey').globalValue,
         ignoreFocusOut: true
     }).then(function(accessKeyResponse){
-        config['accessKey'] = accessKeyResponse; // TODO: reject empty response
+        config['accessKey'] = accessKeyResponse;
 
         if (!accessKeyResponse) return;
 
@@ -540,7 +540,17 @@ function setEventEmitterEvents() {
     
         let documentUri = Utils.FileNameToUri(fileName);
         let editCursor = 0;
-        let textDocument = vscode.workspace.textDocuments[0]; // TODO: Make this smarter
+        let textDocument = null;
+        vscode.workspace.textDocuments.forEach(td => {
+            if (td.uri.fsPath == documentUri.fsPath) {
+                textDocument = td;
+            }
+        });
+
+        if (textDocument == null) {
+            console.warn("Could not find document for EDIT_UPDATE");
+            return;
+        }
     
         let edit = new vscode.WorkspaceEdit();
 

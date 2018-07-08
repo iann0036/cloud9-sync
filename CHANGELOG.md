@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.7.1]
+- Minor bug fixes
+
 ## [0.7.0]
 - Added sync strategies
 - New Add Environment functionality
