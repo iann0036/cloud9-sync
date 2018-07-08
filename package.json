@@ -1,0 +1,244 @@
+{
+  "name": "live-share-for-aws-cloud9",
+  "displayName": "Live Share for AWS Cloud9",
+  "description": "Synchronize your workspace with the AWS Cloud9 service.",
+  "author": {
+    "name": "Ian Mckay",
+    "email": "cloud9sync@ianmckay.com.au"
+  },
+  "version": "0.7.0",
+  "publisher": "iann0036",
+  "icon": "resources/logo_128.png",
+  "engines": {
+    "vscode": "^1.23.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "maintainers": [
+    "Ian Mckay <cloud9sync@ianmckay.com.au>"
+  ],
+  "contributors": [
+    "Ian Mckay <cloud9sync@ianmckay.com.au>"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iann0036/cloud9-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iann0036/cloud9-sync/issues"
+  },
+  "keywords": [
+    "AWS",
+    "Cloud9",
+    "sync",
+    "share",
+    "collaboration"
+  ],
+  "preview": true,
+  "galleryBanner": {
+    "color": "#3c3c3c",
+    "theme": "dark"
+  },
+  "main": "./extension",
+  "contributes": {
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "cloud9sync.syncupfsitem",
+          "group": "1_custom_cloud9"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "cloud9sync.refreshenvironments",
+          "when": "view == live-share-for-aws-cloud9-view-1-environments",
+          "group": "navigation"
+        },
+        {
+          "command": "cloud9sync.addenvironment",
+          "when": "view == live-share-for-aws-cloud9-view-1-environments",
+          "group": "navigation"
+        },
+        {
+          "command": "cloud9sync.sendchat",
+          "when": "view == live-share-for-aws-cloud9-view-3-chat",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "cloud9sync.connect",
+          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == disconnectedEnvironment"
+        },
+        {
+          "command": "cloud9sync.disconnect",
+          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+        },
+        {
+          "command": "cloud9sync.disconnect",
+          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectingEnvironment"
+        },
+        {
+          "command": "cloud9sync.resync",
+          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+        },
+        {
+          "command": "cloud9sync.initterminal",
+          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "cloud9sync.setup",
+        "title": "Setup",
+        "category": "Cloud9 Sync"
+      },
+      {
+        "command": "cloud9sync.sendchat",
+        "title": "Send Chat Message",
+        "category": "Cloud9 Sync",
+        "icon": {
+          "light": "resources/icons/chatmessage-light.png",
+          "dark": "resources/icons/chatmessage-dark.png"
+        }
+      },
+      {
+        "command": "cloud9sync.syncupfsitem",
+        "title": "Upload to Cloud9",
+        "category": "Cloud9 Sync"
+      },
+      {
+        "command": "cloud9sync.initterminal",
+        "title": "Create Terminal",
+        "category": "Cloud9 Sync"
+      },
+      {
+        "command": "cloud9sync.addenvironment",
+        "title": "Add Environment",
+        "category": "Cloud9 Sync",
+        "icon": {
+          "light": "resources/icons/addenv-light.png",
+          "dark": "resources/icons/addenv-dark.png"
+        }
+      },
+      {
+        "command": "cloud9sync.resync",
+        "title": "Resync",
+        "category": "Cloud9 Sync"
+      },
+      {
+        "command": "cloud9sync.refreshenvironments",
+        "title": "Refresh Environments",
+        "category": "Cloud9 Sync",
+        "icon": {
+          "light": "resources/icons/refresh-light.png",
+          "dark": "resources/icons/refresh-dark.png"
+        }
+      },
+      {
+        "command": "cloud9sync.connect",
+        "title": "Connect",
+        "category": "Cloud9 Sync",
+        "icon": {
+          "light": "resources/icons/connect.png",
+          "dark": "resources/icons/connect.png"
+        }
+      },
+      {
+        "command": "cloud9sync.disconnect",
+        "title": "Disconnect",
+        "category": "Cloud9 Sync",
+        "icon": {
+          "light": "resources/icons/connect.png",
+          "dark": "resources/icons/connect.png"
+        }
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "live-share-for-aws-cloud9-vc",
+          "title": "Live Share for AWS Cloud9",
+          "icon": "resources/sidebar.png"
+        }
+      ]
+    },
+    "views": {
+      "live-share-for-aws-cloud9-vc": [
+        {
+          "id": "live-share-for-aws-cloud9-view-1-environments",
+          "name": "Environments"
+        },
+        {
+          "id": "live-share-for-aws-cloud9-view-2-users",
+          "name": "Environment Members"
+        },
+        {
+          "id": "live-share-for-aws-cloud9-view-3-chat",
+          "name": "Group Chat"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Live Share for AWS Cloud9 Configuration",
+      "properties": {
+        "cloud9sync.region": {
+          "type": "string",
+          "default": "us-west-2",
+          "description": "Specifies the AWS Cloud9 region."
+        },
+        "cloud9sync.accessKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your AWS access key for authenticating to the environment."
+        },
+        "cloud9sync.secretKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your AWS secret key for authenticating to the environment."
+        },
+        "cloud9sync.syncStrategy": {
+          "type": "string",
+          "enum": [
+						"prompt",
+            "none",
+            "downloadonly",
+            "bidirectional"
+					],
+          "default": "prompt",
+          "description": "How to synchronize a connected environment."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "npm run compile && node ./node_modules/vscode/bin/test"
+  },
+  "devDependencies": {
+    "typescript": "^2.6.1",
+    "vscode": "^1.1.6",
+    "eslint": "^4.11.0",
+    "@types/node": "^7.0.43",
+    "@types/mocha": "^2.2.42"
+  },
+  "dependencies": {
+    "aws4": "^1.7.0",
+    "color-string": "^1.5.2",
+    "cookie": "^0.3.1",
+    "events": "^3.0.0",
+    "net": "^1.0.2",
+    "request": "^2.87.0",
+    "request-cookies": "^1.1.0",
+    "ws": "^5.2.0"
+  }
+}

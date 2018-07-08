@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "sourceMap": false,
+        "strict": false,
+        "lib": ["es2017", "dom", "scripthost"]
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "compileOnSave": true
+}
