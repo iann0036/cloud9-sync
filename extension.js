@@ -253,6 +253,7 @@ function commandConnect(ctx) {
 
 function commandDisconnect() {
     eventEmitter.emit('disconnect');
+    p.report({message: ""}); // TODO: Replace me with connectionPromise.resolve()
 }
 
 function commandRefreshenvironments() {
