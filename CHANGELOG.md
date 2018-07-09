@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.7.2]
+- Slight name change
+
 ## [0.7.1]
 - Minor bug fixes
 

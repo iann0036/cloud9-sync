@@ -1,8 +1,8 @@
-# Live Share for AWS Cloud9
+# Live Sync for AWS Cloud9
 
 >**Note:** This extension is still in alpha stages. Please [raise an issue](https://github.com/iann0036/cloud9-sync/issues) if you experience any problems.
 
-![Live Share for AWS Cloud9 Screenshot](https://raw.githubusercontent.com/iann0036/cloud9-sync/master/resources/screenshot.png)
+![Live Sync for AWS Cloud9 Screenshot](https://raw.githubusercontent.com/iann0036/cloud9-sync/master/resources/screenshot.png)
 
 ## Setup
 

@@ -38,13 +38,13 @@ function activate(context) {
     fileManager = new FileManager.FileManager(eventEmitter);
     editManager = new EditManager.EditManager(eventEmitter, websocketProvider);
 
-    vscode.window.createTreeView('live-share-for-aws-cloud9-view-2-users', {
+    vscode.window.createTreeView('live-sync-for-aws-cloud9-view-2-users', {
         'treeDataProvider': userProvider
     });
-    environmentView = vscode.window.createTreeView('live-share-for-aws-cloud9-view-1-environments', {
+    environmentView = vscode.window.createTreeView('live-sync-for-aws-cloud9-view-1-environments', {
         'treeDataProvider': environmentProvider
     });
-    vscode.window.createTreeView('live-share-for-aws-cloud9-view-3-chat', {
+    vscode.window.createTreeView('live-sync-for-aws-cloud9-view-3-chat', {
         'treeDataProvider': chatProvider
     });
 

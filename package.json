@@ -1,12 +1,12 @@
 {
   "name": "live-share-for-aws-cloud9",
-  "displayName": "Live Share for AWS Cloud9",
+  "displayName": "Live Sync for AWS Cloud9",
   "description": "Synchronize your workspace with the AWS Cloud9 service.",
   "author": {
     "name": "Ian Mckay",
     "email": "cloud9sync@ianmckay.com.au"
   },
-  "version": "0.7.1",
+  "version": "0.7.2",
   "publisher": "iann0036",
   "icon": "resources/logo_128.png",
   "engines": {
@@ -55,40 +55,40 @@
       "view/title": [
         {
           "command": "cloud9sync.refreshenvironments",
-          "when": "view == live-share-for-aws-cloud9-view-1-environments",
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments",
           "group": "navigation"
         },
         {
           "command": "cloud9sync.addenvironment",
-          "when": "view == live-share-for-aws-cloud9-view-1-environments",
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments",
           "group": "navigation"
         },
         {
           "command": "cloud9sync.sendchat",
-          "when": "view == live-share-for-aws-cloud9-view-3-chat",
+          "when": "view == live-sync-for-aws-cloud9-view-3-chat",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "cloud9sync.connect",
-          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == disconnectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == disconnectedEnvironment"
         },
         {
           "command": "cloud9sync.disconnect",
-          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
         },
         {
           "command": "cloud9sync.disconnect",
-          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectingEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectingEnvironment"
         },
         {
           "command": "cloud9sync.resync",
-          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
         },
         {
           "command": "cloud9sync.initterminal",
-          "when": "view == live-share-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
         }
       ]
     },
@@ -162,31 +162,31 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "live-share-for-aws-cloud9-vc",
-          "title": "Live Share for AWS Cloud9",
+          "id": "live-sync-for-aws-cloud9-vc",
+          "title": "Live Sync for AWS Cloud9",
           "icon": "resources/sidebar.png"
         }
       ]
     },
     "views": {
-      "live-share-for-aws-cloud9-vc": [
+      "live-sync-for-aws-cloud9-vc": [
         {
-          "id": "live-share-for-aws-cloud9-view-1-environments",
+          "id": "live-sync-for-aws-cloud9-view-1-environments",
           "name": "Environments"
         },
         {
-          "id": "live-share-for-aws-cloud9-view-2-users",
+          "id": "live-sync-for-aws-cloud9-view-2-users",
           "name": "Environment Members"
         },
         {
-          "id": "live-share-for-aws-cloud9-view-3-chat",
+          "id": "live-sync-for-aws-cloud9-view-3-chat",
           "name": "Group Chat"
         }
       ]
     },
     "configuration": {
       "type": "object",
-      "title": "Live Share for AWS Cloud9 Configuration",
+      "title": "Live Sync for AWS Cloud9 Configuration",
       "properties": {
         "cloud9sync.region": {
           "type": "string",
