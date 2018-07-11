@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.7.3]
+- More reliable edits
+- Some improvements to Upload to Cloud9 context item
+
 ## [0.7.2]
 - Slight name change
 

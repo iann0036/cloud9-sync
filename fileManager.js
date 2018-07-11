@@ -132,6 +132,7 @@ var FileManager = /** @class */ (function () {
         var _this = this;
         console.log("Performing lookup from " + startPath);
         return new Promise(function (resolve, reject) {
+            var inodePath = path.join(vscode.workspace.rootPath, startPath + "/");
             request.get({
                 url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment' + Utils.EnsureLeadingSlash(startPath) + "/",
                 jar: _this.cookieJar,
@@ -157,7 +158,6 @@ var FileManager = /** @class */ (function () {
                     console.log(body);
                     resolve();
                 }
-                var inodePath = path.join(vscode.workspace.rootPath, startPath + "/");
                 console.log("About to do readdir on" + inodePath);
                 fs.readdir(inodePath, function (err, files) {
                     if (err)

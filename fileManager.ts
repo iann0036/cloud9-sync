@@ -143,6 +143,8 @@ export class FileManager {
     recursiveUpload(startPath) {
         console.log("Performing lookup from " + startPath);
         return new Promise((resolve, reject) => {
+            let inodePath = path.join(vscode.workspace.rootPath, startPath + "/");
+
             request.get({
                 url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment' + Utils.EnsureLeadingSlash(startPath) + "/",
                 jar: this.cookieJar,
@@ -167,7 +169,6 @@ export class FileManager {
                     console.log(body);
                     resolve();
                 }
-                let inodePath = path.join(vscode.workspace.rootPath, startPath + "/");
     
                 console.log("About to do readdir on" + inodePath);
     

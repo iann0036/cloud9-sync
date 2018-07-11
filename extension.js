@@ -68,7 +68,13 @@ function deactivate() {
 exports.deactivate = deactivate;
 
 function commandSyncupfsitem(ctx) {
-    fileManager.recursiveUpload(ctx.fsPath);
+    fs.stat(ctx.fsPath, (err, fstat) => {
+        if (fstat.isDirectory()) {
+            fileManager.recursiveUpload(Utils.ShortenFilePath(ctx.fsPath));
+        } else if (fstat.isFile()) {
+            fileManager.uploadExistingFile(Utils.ShortenFilePath(ctx.fsPath), fs.readFileSync(ctx.fsPath));
+        }
+    });
 }
 
 function commandAddenvironment() {
@@ -486,6 +492,7 @@ function setEventEmitterEvents() {
         // TODO: Reapply changes after SYNC_COMMIT
         //editManager.revNum = event_data["revNum"]; // not strictly needed anymore, as JOIN_DOC will override
         console.warn("SYNC COMMIT");
+
         join_doc_chunks = [];
         websocketProvider.send_ch4_message(
             ["call","collab","send",[vfsid,{"type": "JOIN_DOC","data": {
@@ -567,14 +574,11 @@ function setEventEmitterEvents() {
                     editManager.addRemoteEdit(edit);
                     //editCursor += action.substring(1).length; TODO: Logic is needed?
                 } else if (action[0] == "d") {
-                    console.warn("d-based debug");
-                    console.log(textDocument.positionAt(editCursor));
-                    console.log(action.substring(1).length);
                     let delete_range = new vscode.Range(
                         textDocument.positionAt(editCursor),
                         textDocument.positionAt(editCursor + action.substring(1).length)
                     );
-                    console.log(delete_range);
+                    
                     edit.delete(
                         documentUri,
                         delete_range
@@ -587,9 +591,11 @@ function setEventEmitterEvents() {
                         console.log(expected_deltext);
                         console.log(actual_deltext);
                         console.warn("---");
+
                         eventEmitter.emit("SYNC_COMMIT", {
                             docId: event_data['docId']
                         });
+
                         return;
                     }
 
@@ -614,24 +620,27 @@ function setEventEmitterEvents() {
             }
 
             console.log(edit);
-            vscode.workspace.applyEdit(edit);
-            console.warn("Applied edit");
+            vscode.workspace.applyEdit(edit).then(() => {
+                console.warn("Applied edit");
 
-            // Set selection pointer
-            let client = clients[event_data["clientId"]];
-            vscode.workspace.openTextDocument(documentUri)
-            .then((document) => {
-                userManager.setPosition(event_data["clientId"], fileName, document, {
-                    start: new vscode.Position(event_data["selection"][0], event_data["selection"][1]),
-                    end: new vscode.Position(event_data["selection"][2], event_data["selection"][3])
-                }, event_data["selection"][4]);
-                client['client'].refresh();
+                // Set selection pointer
+                let client = clients[event_data["clientId"]];
+                vscode.workspace.openTextDocument(documentUri)
+                .then((document) => {
+                    userManager.setPosition(event_data["clientId"], fileName, document, {
+                        start: new vscode.Position(event_data["selection"][0], event_data["selection"][1]),
+                        end: new vscode.Position(event_data["selection"][2], event_data["selection"][3])
+                    }, event_data["selection"][4]);
+                    client['client'].refresh();
+                });
+
+                console.warn("DBG 1: Updating lastKnown from extension.js");
+                editManager.lastKnownRemoteDocumentText[Utils.EnsureLeadingSlash(fileName)] = textDocument.getText();
+
+                
+                console.log("Finish processing EDIT_UPDATE");
             });
         }
-    
-        editManager.lastKnownRemoteDocumentText[Utils.EnsureLeadingSlash(fileName)] = textDocument.getText();
-    
-        console.log("Finish processing EDIT_UPDATE");
     });
     
     eventEmitter.on('CURSOR_UPDATE', (event_data) => {
@@ -717,8 +726,6 @@ function refreshEnvironmentsInSidebar() {
         body: awsreq.body,
         rejectUnauthorized: false
     }, function(err, httpResponse, env_token) {
-        console.log(err);
-        console.log(httpResponse);
         if (err != null || !httpResponse.statusCode.toString().startsWith("2")) {
             vscode.window.setStatusBarMessage("Unable to connect to list environments", 5000);
             return;
