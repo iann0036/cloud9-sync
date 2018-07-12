@@ -803,15 +803,9 @@ function checkEnvironmentStatus(environmentId) {
 }
 
 function refreshConnection(environmentId) {
-    console.warn("0");
     extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
     awsregion = extensionConfig.get('region');
 
-    console.warn("1");
-    console.warn(awsregion);
-    console.warn(environmentId);
-    console.warn(extensionConfig.get('secretKey'));
-    console.warn(extensionConfig.get('accessKey'));
     let awsreq = aws4.sign({
         service: 'cloud9',
         region: awsregion,
@@ -827,8 +821,6 @@ function refreshConnection(environmentId) {
         secretAccessKey: extensionConfig.get('secretKey'),
         accessKeyId: extensionConfig.get('accessKey')
     });
-
-    console.warn("2");
 
     console.log("Requesting token...");
     request.post({
@@ -855,7 +847,7 @@ function refreshConnection(environmentId) {
             },
             body: '{"version":13,"token":' + env_token + '}'
         }, function(err, httpResponse, body) {
-            console.log("Verifying gateway...");
+            console.log("Completed connection refresh");
         });
     });
 }
