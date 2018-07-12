@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.7.4]
+- Added keep-alive function for a more stable connection
+
 ## [0.7.3]
 - More reliable edits
 - Some improvements to Upload to Cloud9 context item

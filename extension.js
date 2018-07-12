@@ -15,7 +15,7 @@ const events = require('events');
 
 let cookieJar, xauth, vfsid, watcher, clients, awsregion;
 let connectedEnvironment;
-let activationInterval, extensionConfig;
+let activationInterval, extensionConfig, connectionRefreshInterval;
 let activationIntervalMaxTries, visibleDocuments;
 let join_doc_chunks = [], statusBarItem;
 
@@ -337,6 +337,7 @@ function setEventEmitterEvents() {
         environmentProvider.disconnectAll();
         chatProvider.clearAll();
         websocketProvider.disconnect();
+        clearInterval(connectionRefreshInterval);
     });
 
     eventEmitter.on('websocket_init_complete', () => {
@@ -670,7 +671,7 @@ function setEventEmitterEvents() {
                 if (data[0] == "onData") {
                     try {
                         let contents = JSON.parse(data[2]);
-                        if ([
+                        if ([ // TODO: USER_STATE
                             "USER_JOIN",
                             "USER_LEAVE",
                             "JOIN_DOC",
@@ -801,6 +802,64 @@ function checkEnvironmentStatus(environmentId) {
     });
 }
 
+function refreshConnection(environmentId) {
+    console.warn("0");
+    extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+    awsregion = extensionConfig.get('region');
+
+    console.warn("1");
+    console.warn(awsregion);
+    console.warn(environmentId);
+    console.warn(extensionConfig.get('secretKey'));
+    console.warn(extensionConfig.get('accessKey'));
+    let awsreq = aws4.sign({
+        service: 'cloud9',
+        region: awsregion,
+        method: 'POST',
+        path: '/',
+        headers: {
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.CreateEnvironmentToken'
+        },
+        body: '{"environmentId":"' + environmentId + '","refresh":true}'
+    },
+    {
+        secretAccessKey: extensionConfig.get('secretKey'),
+        accessKeyId: extensionConfig.get('accessKey')
+    });
+
+    console.warn("2");
+
+    console.log("Requesting token...");
+    request.post({
+        url: "https://" + awsreq.hostname + awsreq.path,
+        headers: awsreq.headers,
+        body: awsreq.body
+    }, function(err, httpResponse, env_token) {
+        let env_token_json = JSON.parse(env_token);
+        if ('Message' in env_token_json && !('authenticationTag' in env_token_json)) {
+            vscode.window.showWarningMessage(env_token_json['Message']);
+            commandDisconnect();
+            return;
+        }
+        
+        console.log("Refreshing connection to primary gateway...");
+        request.post({
+            url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/refresh',
+            jar: cookieJar,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
+                'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId
+            },
+            body: '{"version":13,"token":' + env_token + '}'
+        }, function(err, httpResponse, body) {
+            console.log("Verifying gateway...");
+        });
+    });
+}
+
 function doConnect(environmentId) {
     extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
     awsregion = extensionConfig.get('region');
@@ -810,6 +869,11 @@ function doConnect(environmentId) {
     userManager = new UserManager.UserManager();
     last_unacknowledged_edit = null;
     pending_edit = null;
+
+    connectionRefreshInterval = setInterval((environmentId) => {
+        console.warn("Refreshing connection");
+        refreshConnection(environmentId);
+    }, 300000, environmentId); // 5 mins
 
     let awsreq = aws4.sign({
         service: 'cloud9',

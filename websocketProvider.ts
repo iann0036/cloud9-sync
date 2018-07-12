@@ -52,6 +52,10 @@ export class WebsocketProvider {
                 {
                     'headers': {
                         'Cookie': cookiestr
+                    },
+                    'keepAlive': {
+                        'enable': true,
+                        'initialDelay': 60000
                     }
                 }
             );

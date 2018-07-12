@@ -31,6 +31,10 @@ var WebsocketProvider = /** @class */ (function () {
             this.ws = new WebSocket('wss://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=websocket&sid=' + sid, [], {
                 'headers': {
                     'Cookie': cookiestr
+                },
+                'keepAlive': {
+                    'enable': true,
+                    'initialDelay': 60000
                 }
             });
             this.ws.addEventListener('open', function () {
