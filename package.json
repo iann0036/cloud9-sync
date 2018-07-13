@@ -76,7 +76,8 @@
         },
         {
           "command": "cloud9sync.disconnect",
-          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
+          "group": "c2"
         },
         {
           "command": "cloud9sync.disconnect",
@@ -84,11 +85,18 @@
         },
         {
           "command": "cloud9sync.resync",
-          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
+          "group": "c1@1"
         },
         {
           "command": "cloud9sync.initterminal",
-          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
+          "group": "c1@2"
+        },
+        {
+          "command": "cloud9sync.initsharedterminal",
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
+          "group": "c1@3"
         }
       ]
     },
@@ -115,6 +123,11 @@
       {
         "command": "cloud9sync.initterminal",
         "title": "Create Terminal",
+        "category": "Cloud9 Sync"
+      },
+      {
+        "command": "cloud9sync.initsharedterminal",
+        "title": "Create Shared Terminal",
         "category": "Cloud9 Sync"
       },
       {

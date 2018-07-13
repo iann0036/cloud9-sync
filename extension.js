@@ -54,6 +54,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.resync', commandResync));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.refreshenvironments', commandRefreshenvironments));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.initterminal', commandInitterminal));
+    context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.initsharedterminal', commandInitsharedterminal));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.sendchat', commandSendchat));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.syncupfsitem', commandSyncupfsitem));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvironment', commandAddenvironment));
@@ -143,8 +144,14 @@ function commandSendchat() {
         }
     });
 }
+
 function commandInitterminal() {
-    terminalManager.addTerminal();
+    terminalManager.addTerminal(false, vfsid);
+}
+
+function commandInitsharedterminal() {
+    vscode.window.showInformationMessage("Shared terminal not yet implemented");
+    terminalManager.addTerminal(true, vfsid);
 }
 
 function commandResync() {
@@ -435,6 +442,14 @@ function setEventEmitterEvents() {
         userManager.removeClient(event_data["clientId"]);
         clients.splice(event_data["clientId"], 1);
     });
+
+    eventEmitter.on('GENERIC_BROADCAST', (event_data) => {
+        if ('exttype' in event_data) {
+            if (event_data['exttype'] == 'terminal_create') {
+                ; // TODO
+            }
+        }
+    });
     
     eventEmitter.on('CHAT_MESSAGE', (event_data) => {
         vscode.window.setStatusBarMessage(event_data.name + ': ' + event_data.text, 5000);
@@ -680,7 +695,8 @@ function setEventEmitterEvents() {
                             "EDIT_UPDATE",
                             "CURSOR_UPDATE",
                             "CHAT_MESSAGE",
-                            "CLEAR_CHAT"
+                            "CLEAR_CHAT",
+                            "GENERIC_BROADCAST"
                         ].includes(contents["type"])) {
                             eventEmitter.emit(contents["type"], contents["data"]); // TODO: Handle unknown events
                         }

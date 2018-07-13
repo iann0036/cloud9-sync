@@ -6,6 +6,8 @@ export class TerminalManager {
     private lastSocket;
     private lastTid;
     private lastCreatedTerminal;
+    private lastTerminalIsShared;
+    private vfsid;
 
     constructor(
         private extensionPath: string,
@@ -20,7 +22,8 @@ export class TerminalManager {
                 "terminal": this.lastCreatedTerminal,
                 "pid": parseInt(pty["pid"]),
                 "tid": this.lastTid,
-                "socket": this.lastSocket
+                "socket": this.lastSocket,
+                "shared": this.lastTerminalIsShared
             };
             
             this.eventEmitter.emit('send_ch4_message',
@@ -68,8 +71,11 @@ export class TerminalManager {
         });
     }
 
-    addTerminal(): void {
+    addTerminal(shared: boolean, vfsid: string): void {
         let terminalPath = this.getTerminalPath();
+
+        this.vfsid = vfsid;
+        this.lastTerminalIsShared = shared;
 
         if (terminalPath == null) {
             vscode.window.showErrorMessage("Unsupported platform for terminal");
@@ -100,6 +106,12 @@ export class TerminalManager {
                 this.eventEmitter.emit('send_ch4_message',
                     ["write", correctTerminalId.toString(), data.toString()]
                 ); // TODO: Fix
+
+                if (shared) {
+                    this.eventEmitter.emit('send_ch4_message',
+                        ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_udata","tid":correctTerminalId.toString(),"data":data.toString()}}]]
+                    );
+                }
             });
     
             this.lastTid = Math.floor(900*Math.random()) + 100;
@@ -107,6 +119,12 @@ export class TerminalManager {
             this.eventEmitter.emit('send_ch4_message',
                 ["tmux","",{"cwd":"/home/ec2-user/environment","cols":125,"rows":33,"name":"xterm-color","base":"/home/ec2-user/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":true,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$":90}]
             );
+
+            if (shared) {
+                this.eventEmitter.emit('send_ch4_message',
+                    ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_create","tid":this.lastTid}}]]
+                );
+            }
     
             console.log("init'd remote terminal");
         }).on('error', (err) => {
@@ -118,12 +136,19 @@ export class TerminalManager {
             port: 0, // ephemeral
             exclusive: true
         }, () => {
-            let addr = server.address()
+            let addr = server.address();
+            let title = "Cloud9 Terminal";
+
+            if (shared) {
+                title = "Cloud9 Terminal (shared)";
+            }
+
             console.log('opened server on', addr);
+
             if (process.platform == "win32") {
-                this.lastCreatedTerminal = vscode.window.createTerminal("Cloud9 Terminal", this.extensionPath + "/terminalApp/ansicon/" + process.arch + "/ansicon.exe", [ terminalPath, addr['address'] + ":" + addr['port'] ]);
+                this.lastCreatedTerminal = vscode.window.createTerminal(title, this.extensionPath + "/terminalApp/ansicon/" + process.arch + "/ansicon.exe", [ terminalPath, addr['address'] + ":" + addr['port'] ]);
             } else {
-                this.lastCreatedTerminal = vscode.window.createTerminal("Cloud9 Terminal", terminalPath, [ addr['address'] + ":" + addr['port'] ]);
+                this.lastCreatedTerminal = vscode.window.createTerminal(title, terminalPath, [ addr['address'] + ":" + addr['port'] ]);
             }
             this.lastCreatedTerminal.show();
         });
@@ -149,11 +174,23 @@ export class TerminalManager {
 
     closeTerminal(terminal) {
         terminal['socket'].destroy();
+
+        if (terminal['shared']) {
+            this.eventEmitter.emit('send_ch4_message',
+                ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_destroy","tid":terminal['tid']}}]]
+            );
+        }
     }
 
     emitTerminalData(terminal, data) {
         if (typeof data == "string") {
             terminal['socket'].write(data);
+        }
+
+        if (terminal['shared']) {
+            this.eventEmitter.emit('send_ch4_message',
+                ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_sdata","tid":terminal['tid']}}]]
+            );
         }
     }
 }
