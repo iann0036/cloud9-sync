@@ -75,12 +75,12 @@ export class TerminalManager {
         this.vfsid = vfsid;
 
         if (terminalPath == null) {
-            vscode.window.showErrorMessage("Unsupported platform for terminal");
+            vscode.window.showWarningMessage("Unsupported platform for terminal. Upgrade Visual Studio Code to 1.26.0 or above for full compatibility.");
             return;
         }
-
+        
         if (shared) {
-            vscode.window.showInformationMessage("Shared terminal requires Visual Studio Code 1.26.0 or greater");
+            vscode.window.showInformationMessage("Shared terminal requires Visual Studio Code 1.26.0 or above.");
         }
     
         const server = net.createServer((socket) => {

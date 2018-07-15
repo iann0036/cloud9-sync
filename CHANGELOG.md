@@ -1,8 +1,8 @@
 # Change Log
 
 ## [0.8.0]
-- Added shared terminal functionality
-- Added new terminal renderer
+- Added shared terminal functionality (for VS Code 1.26.0 and higher)
+- Added new terminal renderer (for VS Code 1.26.0 and higher)
 
 ## [0.7.4]
 - Added keep-alive function for a more stable connection
