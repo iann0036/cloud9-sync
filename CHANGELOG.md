@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.0]
+- Added shared terminal functionality
+- Added new terminal renderer
+
 ## [0.7.4]
 - Added keep-alive function for a more stable connection
 

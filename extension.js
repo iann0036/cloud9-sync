@@ -8,6 +8,7 @@ const ViewProviders = require("./viewProviders");
 const Utils = require("./utils");
 const UserManager = require("./userManager");
 const TerminalManager = require("./terminalManager");
+const TerminalManagerV2 = require("./terminalManagerV2");
 const WebsocketProvider = require("./websocketProvider");
 const FileManager = require("./fileManager");
 const EditManager = require("./editManager");
@@ -27,13 +28,19 @@ let p, connectionPromise;
 function activate(context) {
     console.log('"cloud9-sync" is active');
 
+    let versionparts = vscode.version.split(".");
+
     eventEmitter = new events.EventEmitter();
     setEventEmitterEvents();
 
     userProvider = new ViewProviders.UserProvider(vscode.workspace.rootPath);
     environmentProvider = new ViewProviders.EnvironmentProvider(vscode.workspace.rootPath);
     chatProvider = new ViewProviders.ChatProvider(vscode.workspace.rootPath);
-    terminalManager = new TerminalManager.TerminalManager(context.extensionPath, eventEmitter);
+    if (typeof vscode.window.createTerminalRenderer === "function" && parseInt(versionparts[0]) >= 1 && parseInt(versionparts[1]) >= 26) {
+        terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
+    } else {
+        terminalManager = new TerminalManager.TerminalManager(context.extensionPath, eventEmitter);
+    }
     websocketProvider = new WebsocketProvider.WebsocketProvider(eventEmitter);
     fileManager = new FileManager.FileManager(eventEmitter);
     editManager = new EditManager.EditManager(eventEmitter, websocketProvider);
