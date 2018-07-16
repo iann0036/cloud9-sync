@@ -26,9 +26,9 @@ export class RenderManager {
 	) {
 		this.rangedecorator = vscode.window.createTextEditorDecorationType({
 			backgroundColor: 'rgba(' + this.color.r.toString() + ',' + this.color.g.toString() + ',' + this.color.b.toString() + ',0.3)',
-			borderRadius: '0.1rem'
+			borderRadius: '0.1rem',
+			rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 		});
-
 		this.cursordecorator = vscode.window.createTextEditorDecorationType({
             before: {
                 color: 'rgba(' + this.color.r.toString() + ',' + this.color.g.toString() + ',' + this.color.b.toString() + ',1)',

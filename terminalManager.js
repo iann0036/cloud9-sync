@@ -28,7 +28,7 @@ var TerminalManager = /** @class */ (function () {
                         if (Object.keys(_this.terminals).map(Number).indexOf(data[1]) != -1) {
                             console.log("Terminating terminal");
                             _this.closeTerminal(_this.terminals[data[1]]);
-                            _this.terminals.splice(data[1], 1);
+                            delete _this.terminals[data[1]];
                         }
                     }
                     else if (data[0] == "onData") {
@@ -59,14 +59,15 @@ var TerminalManager = /** @class */ (function () {
     }
     TerminalManager.prototype.addTerminal = function (shared, vfsid) {
         var _this = this;
+        if (shared) {
+            vscode.window.showInformationMessage("Shared terminal requires Visual Studio Code 1.26.0 or above.");
+            return;
+        }
         var terminalPath = this.getTerminalPath();
         this.vfsid = vfsid;
         if (terminalPath == null) {
             vscode.window.showWarningMessage("Unsupported platform for terminal. Upgrade Visual Studio Code to 1.26.0 or above for full compatibility.");
             return;
-        }
-        if (shared) {
-            vscode.window.showInformationMessage("Shared terminal requires Visual Studio Code 1.26.0 or above.");
         }
         var server = net.createServer(function (socket) {
             _this.lastSocket = socket;

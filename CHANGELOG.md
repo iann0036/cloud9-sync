@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.8.1]
+- Fix selection highlighter expanding with cursor
+- Fix terminal close event for legacy terminal emulator
+
 ## [0.8.0]
 - Added shared terminal functionality (for VS Code 1.26.0 and higher)
 - Added new terminal renderer (for VS Code 1.26.0 and higher)

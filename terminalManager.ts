@@ -39,7 +39,7 @@ export class TerminalManager {
                         if (Object.keys(this.terminals).map(Number).indexOf(data[1]) != -1) {
                             console.log("Terminating terminal");
                             this.closeTerminal(this.terminals[data[1]]);
-                            this.terminals.splice(data[1], 1);
+                            delete this.terminals[data[1]];
                         }
                     } else if (data[0] == "onData") {
                         if (Object.keys(this.terminals).map(Number).indexOf(data[1]) != -1) {

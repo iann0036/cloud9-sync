@@ -46,7 +46,7 @@ var TerminalManager = /** @class */ (function () {
                                         "pid": null,
                                         "tid": xd['data']['tid'],
                                         "shared": true,
-                                        "owner": "other"
+                                        "owner": xd['data']['sender']
                                     };
                                     terminal.terminal.show();
                                 }
