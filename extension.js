@@ -157,8 +157,11 @@ function commandInitterminal() {
 }
 
 function commandInitsharedterminal() {
-    vscode.window.showInformationMessage("Shared terminal not yet implemented");
-    terminalManager.addTerminal(true, vfsid);
+    vscode.window.showInformationMessage("Shared terminals will be presented to all users, regardless of permission level. Do you want to continue?", "Cancel", "OK").then((response) => {
+        if (response == "OK") {
+            terminalManager.addTerminal(true, vfsid);
+        }
+    });
 }
 
 function commandResync() {
@@ -449,14 +452,6 @@ function setEventEmitterEvents() {
         userManager.removeClient(event_data["clientId"]);
         clients.splice(event_data["clientId"], 1);
     });
-
-    eventEmitter.on('GENERIC_BROADCAST', (event_data) => {
-        if ('exttype' in event_data) {
-            if (event_data['exttype'] == 'terminal_create') {
-                ; // TODO
-            }
-        }
-    });
     
     eventEmitter.on('CHAT_MESSAGE', (event_data) => {
         vscode.window.setStatusBarMessage(event_data.name + ': ' + event_data.text, 5000);
@@ -702,8 +697,8 @@ function setEventEmitterEvents() {
                             "EDIT_UPDATE",
                             "CURSOR_UPDATE",
                             "CHAT_MESSAGE",
-                            "CLEAR_CHAT",
-                            "GENERIC_BROADCAST"
+                            //"GENERIC_BROADCAST",
+                            "CLEAR_CHAT"
                         ].includes(contents["type"])) {
                             eventEmitter.emit(contents["type"], contents["data"]); // TODO: Handle unknown events
                         }
@@ -1082,6 +1077,16 @@ function do_sync(sync_type) {
             }).catch((error) => {
                 console.error(error);
                 reject();
+            });
+        } else {
+            environmentProvider.getChildren().then((envs) => {
+                envs.forEach(env => {
+                    if (env.id == connectedEnvironment.id) {
+                        env.setConnected();
+                    }
+                });
+                environmentProvider.refresh();
+                resolve();
             });
         }
     });

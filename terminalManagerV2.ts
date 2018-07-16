@@ -16,19 +16,14 @@ export class TerminalManager {
                 "terminal": this.lastCreatedTerminal,
                 "pid": parseInt(pty["pid"]),
                 "tid": this.lastTid,
-                "shared": this.lastTerminalIsShared
+                "shared": this.lastTerminalIsShared,
+                "owner": this.vfsid
             };
 
             this.lastCreatedTerminal.onDidAcceptInput(data => {
                 this.eventEmitter.emit('send_ch4_message',
                     ["write", pty["id"], data.toString()]
                 );
-            
-                if (this.lastTerminalIsShared) {
-                    this.eventEmitter.emit('send_ch4_message',
-                        ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_udata","tid":pty["id"],"data":data.toString()}}]]
-                    );
-                }
             });
             this.lastCreatedTerminal.terminal.show();
             
@@ -54,6 +49,30 @@ export class TerminalManager {
                             console.log("Emitting terminal data");
                             this.emitTerminalData(this.terminals[data[1]], data[2]);
                         }
+                        try {
+                            let xd = JSON.parse(data[2]);
+                            if (xd['type'] == "GENERIC_BROADCAST" && xd['data']['sender'] != this.vfsid) {
+                                if (xd['data']['exttype'] == 'terminal_create') {
+                                    let terminal = vscode.window.createTerminalRenderer("Shared Cloud9 Terminal");
+                                    this.terminals['shared_' + xd['data']['tid']] = {
+                                        "terminal": terminal,
+                                        "pid": null,
+                                        "tid": xd['data']['tid'],
+                                        "shared": true,
+                                        "owner": xd['data']['sender']
+                                    };
+                                    terminal.terminal.show();
+                                } else if (xd['data']['exttype'] == 'terminal_data') {
+                                    if ('shared_' + xd['data']['tid'] in this.terminals) {
+                                        this.terminals['shared_' + xd['data']['tid']]['terminal'].write(xd['data']['data']);
+                                    }
+                                } else if (xd['data']['exttype'] == 'terminal_destroy') {
+                                    if ('shared_' + xd['data']['tid'] in this.terminals) {
+                                        this.terminals['shared_' + xd['data']['tid']]['terminal'].terminal.dispose();
+                                    }
+                                }
+                            }
+                        } catch(err) {}
                     } else if (data[0] == 90) { // terminal creation channel
                         let contents = data[2];
         
@@ -65,7 +84,7 @@ export class TerminalManager {
         });
 
         vscode.window.onDidCloseTerminal((closedTerminal) => {
-            //delete this.terminals[t];    TODO: Fix clean up of dict
+            //delete this.terminals[t];    TODO: Fix clean up of dict, if not shared
         });
     }
 
@@ -88,7 +107,7 @@ export class TerminalManager {
 
         if (shared) {
             this.eventEmitter.emit('send_ch4_message',
-                ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_create","tid":this.lastTid}}]]
+                ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_create","tid":this.lastTid,"sender":this.vfsid}}]]
             );
         }
 
@@ -100,7 +119,7 @@ export class TerminalManager {
 
         if (terminal['shared']) {
             this.eventEmitter.emit('send_ch4_message',
-                ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_destroy","tid":terminal['tid']}}]]
+                ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_destroy","tid":terminal['tid'],"sender":this.vfsid}}]]
             );
         }
     }
@@ -108,12 +127,12 @@ export class TerminalManager {
     emitTerminalData(terminal, data) {
         if (typeof data == "string") {
             terminal['terminal'].write(data);
-        }
 
-        if (terminal['shared']) {
-            this.eventEmitter.emit('send_ch4_message',
-                ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_sdata","tid":terminal['tid']}}]]
-            );
+            if (terminal['shared']) {
+                this.eventEmitter.emit('send_ch4_message',
+                    ["call","collab","send",[this.vfsid,{"type":"GENERIC_BROADCAST","data":{"exttype":"terminal_data","data":data,"tid":terminal['tid'],"sender":this.vfsid}}]]
+                );
+            }
         }
     }
 }
