@@ -66,6 +66,26 @@ export class FileManager {
             });
         });
     }
+
+    stat(filename) {
+        return new Promise((resolve, reject) => {
+            request.get({
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/.c9/metadata/' + filename,
+                jar: this.cookieJar,
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
+                }
+            }, function(err, httpResponse, body) {
+                console.warn("START OF STAT");
+                console.log(httpResponse);
+                console.log(body);
+                resolve(""); // REMOVE ME
+            });
+        });
+    }
     
     downloadFile(filename, inodePath, inode) {
         return new Promise((resolve, reject) => {

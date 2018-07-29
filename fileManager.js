@@ -59,6 +59,26 @@ var FileManager = /** @class */ (function () {
             });
         });
     };
+    FileManager.prototype.stat = function (filename) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            request.get({
+                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/.c9/metadata/' + filename,
+                jar: _this.cookieJar,
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
+                    'x-authorization': _this.xauth
+                }
+            }, function (err, httpResponse, body) {
+                console.warn("START OF STAT");
+                console.log(httpResponse);
+                console.log(body);
+                resolve(""); // REMOVE ME
+            });
+        });
+    };
     FileManager.prototype.downloadFile = function (filename, inodePath, inode) {
         var _this = this;
         return new Promise(function (resolve, reject) {

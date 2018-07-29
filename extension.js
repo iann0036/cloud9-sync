@@ -12,6 +12,10 @@ const TerminalManagerV2 = require("./terminalManagerV2");
 const WebsocketProvider = require("./websocketProvider");
 const FileManager = require("./fileManager");
 const EditManager = require("./editManager");
+
+const ContentProvider = require("./contentProvider");
+const FileSystemProvider = require("./fileSystemProvider");
+
 const events = require('events');
 
 let cookieJar, xauth, vfsid, watcher, clients, awsregion;
@@ -24,6 +28,8 @@ let userProvider, environmentProvider, environmentView, userManager;
 let terminalManager, eventEmitter, websocketProvider, fileManager, editManager;
 
 let p, connectionPromise;
+
+let cloud9fs;
 
 function activate(context) {
     console.log('"cloud9-sync" is active');
@@ -65,6 +71,24 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.sendchat', commandSendchat));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.syncupfsitem', commandSyncupfsitem));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvironment', commandAddenvironment));
+
+    /*
+    TODO: implement this for ReadOnly users
+
+    vscode.workspace.registerTextDocumentContentProvider('cloud9', new ContentProvider.Cloud9ContentProvider());
+    
+    vscode.workspace.onDidOpenTextDocument((document) => {
+        if (document.uri.scheme !== "cloud9") {
+            vscode.commands.executeCommand("workbench.action.closeActiveEditor").then(() => {
+                vscode.commands.executeCommand('vscode.open', uri.with({ scheme: 'cloud9' }))
+                    .then(null, vscode.window.showErrorMessage);
+            }, vscode.window.showErrorMessage);
+        }
+    });
+    */
+    
+    const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager);
+    context.subscriptions.push(vscode.workspace.registerFileSystemProvider('cloud9', cloud9fs, { isCaseSensitive: true }));
 
     refreshEnvironmentsInSidebar();
 }
@@ -180,30 +204,32 @@ function commandConnect(ctx) {
 
     //vscode.window.setStatusBarMessage('Connecting...', 10000);
 
-    vscode.window.withProgress({
-        //title: "Connection Status",
-        location: vscode.ProgressLocation.Window
-    }, (p_local) => new Promise((connectionPromise_local) => {
+    environmentProvider.getChildren().then(function(envs) {
+        if (envs.length < 1) {
+            vscode.window.showWarningMessage('No environments available to connect to');
+            connectionPromise.resolve();
+        } else {
+            connectedEnvironment = envs[0];
+            envs.forEach(env => {
+                if (ctx.id == env.id) {
+                    connectedEnvironment = env;
+                }
+            });
+            console.log(environmentView.selection);
+            connectedEnvironment.setConnecting();
+            environmentProvider.refresh();
 
-        p = p_local;
-        connectionPromise = connectionPromise_local;
+            vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('cloud9:/' + connectedEnvironment.id + '/'), name: "Cloud9 - " + connectedEnvironment['name'] });
 
-        p.report({message: "Checking Cloud9 environment status"});
-        environmentProvider.getChildren().then(function(envs) {
-            if (envs.length < 1) {
-                vscode.window.showWarningMessage('No environments available to connect to');
-                connectionPromise.resolve();
-            } else {
-                connectedEnvironment = envs[0];
-                envs.forEach(env => {
-                    if (ctx.id == env.id) {
-                        connectedEnvironment = env;
-                    }
-                });
-                console.log(environmentView.selection);
-                connectedEnvironment.setConnecting();
-                environmentProvider.refresh();
-    
+            vscode.window.withProgress({
+                //title: "Connection Status",
+                location: vscode.ProgressLocation.Window
+            }, (p_local) => new Promise((connectionPromise_local) => {
+        
+                p = p_local;
+                connectionPromise = connectionPromise_local;
+        
+                p.report({message: "Checking Cloud9 environment status"});
                 checkEnvironmentStatus(connectedEnvironment['id']).then(function(status){
                     if (connectedEnvironment.state == "NOT_CONNECTED") {
                         commandDisconnect();
@@ -269,9 +295,11 @@ function commandConnect(ctx) {
                         }, 3000);
                     });
                 });
-            }
-        });
-    }));
+            }));
+        }
+    });
+
+
 }
 
 function commandDisconnect() {
@@ -358,6 +386,7 @@ function setEventEmitterEvents() {
     });
 
     eventEmitter.on('websocket_init_complete', () => {
+
         console.log("WebSocket Init Complete, doing JOIN_DOCs");
         visibleDocuments = [];
     
