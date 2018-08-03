@@ -4,6 +4,7 @@ import * as path from 'path';
 import { workspace } from 'vscode';
 import * as FileManager from './fileManager';
 import { resolve } from 'dns';
+import { TextEncoder } from 'text-encoding';
 
 export class File implements vscode.FileStat {
 
@@ -49,16 +50,72 @@ export type Entry = File | Directory;
 export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
 
     root = new Directory('');
+    environmentConnections = {}
 
     constructor(
-        private fileManager: FileManager.FileManager
+        private fileManager: FileManager.FileManager,
+        private eventEmitter
     ) {
         //this.createDirectory(vscode.Uri.parse(`cloud9:/123/`));
     }
 
     // --- manage file metadata
 
+    private _getEnvConnection(id): Thenable<string> {
+        return new Promise((resolve, reject) => {
+            if (id in this.environmentConnections) {
+                if (this.environmentConnections[id].status == "connected") {
+                    resolve(id);
+                }
+            } else {
+                this.environmentConnections[id] = {
+                    'status': 'connecting'
+                };
+                this.eventEmitter.emit("request_connect", {
+                    id: id
+                });
+            }
+
+            this.eventEmitter.on('websocket_init_complete', () => {
+                console.warn("WEBSOCK COMPLETE FS PROVIDER");
+                this.environmentConnections[id] = {
+                    'status': 'connected'
+                };
+                resolve(id);
+            });
+        });
+    }
+
+    private _c9stattovsstat(stat): Entry {
+        let entry: Entry;
+
+        if (stat['mime'] == "inode/directory") {
+            entry = new Directory(stat.name);
+        } else {
+            entry = new File(stat.name);
+        }
+
+        entry.size = stat.size;
+        entry.ctime = stat.ctime;
+        entry.mtime = stat.mtime;
+
+        return entry;
+    }
+
     stat(uri: vscode.Uri): Thenable<vscode.FileStat> {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.stat(splituri.slice(2).join('/')).then(stats => {
+                    resolve(this._c9stattovsstat(stats));
+                }).catch(err => {
+                    reject(err);
+                });
+            });
+        }); // TEMP
+
         console.warn("stat");
         console.log(uri);
 
@@ -81,51 +138,42 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
     }
 
     readDirectory(uri: vscode.Uri): Thenable<[string, vscode.FileType][]> {
-        
-        console.warn("readdir");
-        console.log(uri);
         return new Promise((resolve, reject) => {
-            if (uri.path == "/") {
-                console.log("resolving single");
-                resolve([
-                    ["/something.txt",vscode.FileType.File]
-                ])
-            } else {
-                console.log("resolving empty");
-                resolve([]);
-            }
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.listdir(splituri.slice(2).join('/')).then(stats => {
+                    let converted_stats = [];
+                    stats.forEach(stat => {
+                        let converted_stat = [splituri.slice(2).join('/') + stat['name'], vscode.FileType.File];
+                        if (stat['mime'] == "inode/directory") {
+                            converted_stat[1] = vscode.FileType.Directory;
+                        }
+                        converted_stats.push(converted_stat);
+                    });
+                    resolve(converted_stats);
+                });
+            });
         });
     }
 
     // --- manage file contents
 
-    readFile(uri: vscode.Uri): Uint8Array {
-        console.warn("readfile");
-        console.log(uri);
-        return this._lookupAsFile(uri, false).data;
+    readFile(uri: vscode.Uri): Thenable<Uint8Array> {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.downloadFile("/" + splituri.slice(2).join('/'), null, null).then(body => {
+                    let uint8 = new TextEncoder().encode(body);
+                    resolve(uint8);
+                });
+            });
+        });
     }
 
     writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean, overwrite: boolean }): void {
-        let basename = path.posix.basename(uri.path);
-        let parent = this._lookupParentDirectory(uri);
-        let entry = parent.entries.get(basename);
-        if (entry instanceof Directory) {
-            throw vscode.FileSystemError.FileIsADirectory(uri);
-        }
-        if (!entry && !options.create) {
-            throw vscode.FileSystemError.FileNotFound(uri);
-        }
-        if (entry && options.create && !options.overwrite) {
-            throw vscode.FileSystemError.FileExists(uri);
-        }
-        if (!entry) {
-            entry = new File(basename);
-            parent.entries.set(basename, entry);
-            this._fireSoon({ type: vscode.FileChangeType.Created, uri });
-        }
-        entry.mtime = Date.now();
-        entry.size = content.byteLength;
-        entry.data = content;
+        ;
 
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
     }
@@ -133,20 +181,7 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
     // --- manage files/folders
 
     rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void {
-
-        if (!options.overwrite && this._lookup(newUri, true)) {
-            throw vscode.FileSystemError.FileExists(newUri);
-        }
-
-        let entry = this._lookup(oldUri, false);
-        let oldParent = this._lookupParentDirectory(oldUri);
-
-        let newParent = this._lookupParentDirectory(newUri);
-        let newName = path.posix.basename(newUri.path);
-
-        oldParent.entries.delete(entry.name);
-        entry.name = newName;
-        newParent.entries.set(newName, entry);
+        ;
 
         this._fireSoon(
             { type: vscode.FileChangeType.Deleted, uri: oldUri },
@@ -155,76 +190,15 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
     }
 
     delete(uri: vscode.Uri): void {
-        let dirname = uri.with({ path: path.posix.dirname(uri.path) });
-        let basename = path.posix.basename(uri.path);
-        let parent = this._lookupAsDirectory(dirname, false);
-        if (!parent.entries.has(basename)) {
-            throw vscode.FileSystemError.FileNotFound(uri);
-        }
-        parent.entries.delete(basename);
-        parent.mtime = Date.now();
-        parent.size -= 1;
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { uri, type: vscode.FileChangeType.Deleted });
+        ;
+
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { uri, type: vscode.FileChangeType.Deleted });
     }
 
     createDirectory(uri: vscode.Uri): void {
-        let basename = path.posix.basename(uri.path);
-        let dirname = uri.with({ path: path.posix.dirname(uri.path) });
-        let parent = this._lookupAsDirectory(dirname, false);
+        ;
 
-        let entry = new Directory(basename);
-        parent.entries.set(entry.name, entry);
-        parent.mtime = Date.now();
-        parent.size += 1;
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { type: vscode.FileChangeType.Created, uri });
-    }
-
-    // --- lookup
-
-    private _lookup(uri: vscode.Uri, silent: false): Entry;
-    private _lookup(uri: vscode.Uri, silent: boolean): Entry | undefined;
-    private _lookup(uri: vscode.Uri, silent: boolean): Entry | undefined {
-        let parts = uri.path.split('/');
-        let entry: Entry = this.root;
-        for (const part of parts) {
-            if (!part) {
-                continue;
-            }
-            let child: Entry | undefined;
-            if (entry instanceof Directory) {
-                child = entry.entries.get(part);
-            }
-            if (!child) {
-                if (!silent) {
-                    throw vscode.FileSystemError.FileNotFound(uri);
-                } else {
-                    return undefined;
-                }
-            }
-            entry = child;
-        }
-        return entry;
-    }
-
-    private _lookupAsDirectory(uri: vscode.Uri, silent: boolean): Directory {
-        let entry = this._lookup(uri, silent);
-        if (entry instanceof Directory) {
-            return entry;
-        }
-        throw vscode.FileSystemError.FileNotADirectory(uri);
-    }
-
-    private _lookupAsFile(uri: vscode.Uri, silent: boolean): File {
-        let entry = this._lookup(uri, silent);
-        if (entry instanceof File) {
-            return entry;
-        }
-        throw vscode.FileSystemError.FileIsADirectory(uri);
-    }
-
-    private _lookupParentDirectory(uri: vscode.Uri): Directory {
-        const dirname = uri.with({ path: path.posix.dirname(uri.path) });
-        return this._lookupAsDirectory(dirname, false);
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri });
     }
 
     // --- manage file events

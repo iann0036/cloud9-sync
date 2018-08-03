@@ -62,20 +62,39 @@ var FileManager = /** @class */ (function () {
     FileManager.prototype.stat = function (filename) {
         var _this = this;
         return new Promise(function (resolve, reject) {
+            _this.eventEmitter.emit('send_ch4_message', ["stat", "/" + filename, {}, { $: 91 }]);
+            _this.eventEmitter.on('ch4_data', function (data, environmentId) {
+                if (Array.isArray(data)) {
+                    if (data.length > 2) {
+                        if (data[0] == 91) {
+                            var contents = data[2];
+                            resolve(contents);
+                        }
+                    }
+                }
+            });
+        });
+    };
+    FileManager.prototype.listdir = function (filename) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            if (!filename.endsWith("/")) {
+                filename += "/";
+            }
             request.get({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/.c9/metadata/' + filename,
+                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/.c9/metadata/environment/' + filename,
                 jar: _this.cookieJar,
                 headers: {
-                    'Content-Type': 'text/plain',
+                    'Content-Type': 'application/json',
                     'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
                 }
             }, function (err, httpResponse, body) {
-                console.warn("START OF STAT");
+                console.warn("LISTDIR RESPONSE");
                 console.log(httpResponse);
                 console.log(body);
-                resolve(""); // REMOVE ME
+                resolve(JSON.parse(body));
             });
         });
     };
@@ -93,10 +112,13 @@ var FileManager = /** @class */ (function () {
                     'x-authorization': _this.xauth
                 }
             }, function (err, httpResponse, body) {
-                console.log("Creating the file " + inodePath);
-                fs.writeFileSync(inodePath, body);
-                //fs.utimes(inodePath, parseInt(inode.mtime/1000), parseInt(inode.mtime/1000), resolve); TODO: Fix
-                resolve(); // REMOVE ME
+                if (inodePath != null) {
+                    console.log("Creating the file " + inodePath);
+                    fs.writeFileSync(inodePath, body);
+                    //fs.utimes(inodePath, parseInt(inode.mtime/1000), parseInt(inode.mtime/1000), resolve); TODO: Fix
+                }
+                console.warn("About to return downloadFile body");
+                resolve(body); // REMOVE ME
             });
         });
     };

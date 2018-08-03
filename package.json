@@ -6,7 +6,7 @@
     "name": "Ian Mckay",
     "email": "cloud9sync@ianmckay.com.au"
   },
-  "version": "0.8.1",
+  "version": "0.8.2",
   "publisher": "iann0036",
   "icon": "resources/logo_128.png",
   "engines": {
@@ -72,31 +72,38 @@
       "view/item/context": [
         {
           "command": "cloud9sync.connect",
-          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == disconnectedEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == disconnectedEnvironment",
+          "group": "c9@1"
         },
         {
           "command": "cloud9sync.disconnect",
           "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
-          "group": "c2"
+          "group": "c9@2"
         },
         {
           "command": "cloud9sync.disconnect",
-          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectingEnvironment"
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectingEnvironment",
+          "group": "c9@3"
+        },
+        {
+          "command": "cloud9sync.addenvtoworkspace",
+          "when": "view == live-sync-for-aws-cloud9-view-1-environments",
+          "group": "c9@4"
         },
         {
           "command": "cloud9sync.resync",
           "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
-          "group": "c1@1"
+          "group": "c9@5"
         },
         {
           "command": "cloud9sync.initterminal",
           "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
-          "group": "c1@2"
+          "group": "c9@6"
         },
         {
           "command": "cloud9sync.initsharedterminal",
           "when": "view == live-sync-for-aws-cloud9-view-1-environments && viewItem == connectedEnvironment",
-          "group": "c1@3"
+          "group": "c9@7"
         }
       ]
     },
@@ -118,6 +125,11 @@
       {
         "command": "cloud9sync.syncupfsitem",
         "title": "Upload to Cloud9",
+        "category": "Cloud9 Sync"
+      },
+      {
+        "command": "cloud9sync.addenvtoworkspace",
+        "title": "Add Environment to Workspace",
         "category": "Cloud9 Sync"
       },
       {
@@ -219,11 +231,11 @@
         "cloud9sync.syncStrategy": {
           "type": "string",
           "enum": [
-						"prompt",
+            "prompt",
             "none",
             "downloadonly",
             "bidirectional"
-					],
+          ],
           "default": "prompt",
           "description": "How to synchronize a connected environment."
         }
@@ -232,7 +244,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ || exit 0",
     "watch": "tsc -watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install",
     "test": "npm run compile && node ./node_modules/vscode/bin/test"
@@ -252,6 +264,7 @@
     "net": "^1.0.2",
     "request": "^2.87.0",
     "request-cookies": "^1.1.0",
+    "text-encoding": "^0.6.4",
     "ws": "^5.2.0"
   }
 }

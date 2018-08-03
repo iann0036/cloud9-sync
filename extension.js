@@ -71,6 +71,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.sendchat', commandSendchat));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.syncupfsitem', commandSyncupfsitem));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvironment', commandAddenvironment));
+    context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvtoworkspace', commandAddenvtoworkspace));
 
     /*
     TODO: implement this for ReadOnly users
@@ -87,7 +88,7 @@ function activate(context) {
     });
     */
     
-    const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager);
+    const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager, eventEmitter);
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider('cloud9', cloud9fs, { isCaseSensitive: true }));
 
     refreshEnvironmentsInSidebar();
@@ -176,6 +177,10 @@ function commandSendchat() {
     });
 }
 
+function commandAddenvtoworkspace(ctx) {
+    vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('cloud9:/' + ctx.id + '/'), name: ctx.name + " - Cloud9" });
+}
+
 function commandInitterminal() {
     terminalManager.addTerminal(false, vfsid);
 }
@@ -198,8 +203,6 @@ function commandResync() {
 }
 
 function commandConnect(ctx) {
-    console.log(ctx);
-    
     eventEmitter.emit('disconnect');
 
     //vscode.window.setStatusBarMessage('Connecting...', 10000);
@@ -218,8 +221,6 @@ function commandConnect(ctx) {
             console.log(environmentView.selection);
             connectedEnvironment.setConnecting();
             environmentProvider.refresh();
-
-            vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('cloud9:/' + connectedEnvironment.id + '/'), name: "Cloud9 - " + connectedEnvironment['name'] });
 
             vscode.window.withProgress({
                 //title: "Connection Status",
@@ -373,6 +374,12 @@ function setEventEmitterEvents() {
         websocketProvider.send_ch4_message(data);
     });
 
+    eventEmitter.on('request_connect', (environment) => {
+        setTimeout(() => {
+            commandConnect(environment);
+        }, 5000);
+    });
+
     eventEmitter.on('disconnect', () => {
         // TODO: connectionPromise.resolve()
         if (statusBarItem) {
@@ -471,12 +478,14 @@ function setEventEmitterEvents() {
             state: event_data["user"]["state"]
         };
         console.log(clients);
+        userProvider.setUserState(event_data["userId"], event_data["user"]["state"]);
         vscode.window.setStatusBarMessage(event_data["user"]["name"] + ' has joined the workspace', 5000);
     });
     
     eventEmitter.on('USER_LEAVE', (event_data) => {
         if (event_data["clientId"] == vfsid) return;
         vscode.window.setStatusBarMessage(clients[event_data["clientId"]]["name"] + ' has left the workspace', 5000);
+        userProvider.setUserState(event_data["userId"], "offline"); // TODO: Check for multiple online clients
         clients[event_data["clientId"]]["client"].destroy();
         userManager.removeClient(event_data["clientId"]);
         clients.splice(event_data["clientId"], 1);
@@ -569,7 +578,7 @@ function setEventEmitterEvents() {
                 };
                 console.log("Finished adding client");
             });
-            userProvider.addUser(user["name"], user['state']);
+            userProvider.addUser(user["userId"], user["name"], user['state']);
         });
         Object.values(event_data["chatHistory"]).forEach(chat => {
             chatProvider.addChatItem(chat["id"], chat["userId"], chat["name"], chat["text"], chat["timestamp"]);
@@ -681,9 +690,7 @@ function setEventEmitterEvents() {
                     client['client'].refresh();
                 });
 
-                console.warn("DBG 1: Updating lastKnown from extension.js");
                 editManager.lastKnownRemoteDocumentText[Utils.EnsureLeadingSlash(fileName)] = textDocument.getText();
-
                 
                 console.log("Finish processing EDIT_UPDATE");
             });
@@ -709,7 +716,9 @@ function setEventEmitterEvents() {
             });
     });
 
-    // TODO: eventEmitter.on('USER_STATE', (event_data) => {     event_data.state == idle
+    eventEmitter.on('USER_STATE', (event_data) => {
+        userProvider.setUserState(event_data.userId, event_data.state);
+    });
     
     eventEmitter.on('ch4_data', (data, environmentId) => {
         if (Array.isArray(data)) {
@@ -717,7 +726,7 @@ function setEventEmitterEvents() {
                 if (data[0] == "onData") {
                     try {
                         let contents = JSON.parse(data[2]);
-                        if ([ // TODO: USER_STATE
+                        if ([ // TODO: FILE_SAVED
                             "USER_JOIN",
                             "USER_LEAVE",
                             "JOIN_DOC",
@@ -727,6 +736,7 @@ function setEventEmitterEvents() {
                             "CURSOR_UPDATE",
                             "CHAT_MESSAGE",
                             //"GENERIC_BROADCAST",
+                            "USER_STATE",
                             "CLEAR_CHAT"
                         ].includes(contents["type"])) {
                             eventEmitter.emit(contents["type"], contents["data"]); // TODO: Handle unknown events
@@ -743,43 +753,16 @@ function setEventEmitterEvents() {
 /////
 
 function refreshEnvironmentsInSidebar() {
-    extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
-    awsregion = extensionConfig.get('region');
+    return new Promise((resolve, reject) => {
+        extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+        awsregion = extensionConfig.get('region');
 
-    if (!extensionConfig.get('accessKey') || !extensionConfig.get('secretKey')) {
-        return;
-    }
-    
-    environmentProvider.clearAll();
-
-    let awsreq = aws4.sign({
-        service: 'cloud9',
-        region: awsregion,
-        method: 'POST',
-        path: '/',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.ListEnvironments'
-        },
-        body: '{}'
-    },
-    {
-        secretAccessKey: extensionConfig.get('secretKey'),
-        accessKeyId: extensionConfig.get('accessKey')
-    });
-
-    request.post({
-        url: "https://" + awsreq.hostname + awsreq.path,
-        headers: awsreq.headers,
-        body: awsreq.body,
-        rejectUnauthorized: false
-    }, function(err, httpResponse, env_token) {
-        if (err != null || !httpResponse.statusCode.toString().startsWith("2")) {
-            vscode.window.setStatusBarMessage("Unable to connect to list environments", 5000);
+        if (!extensionConfig.get('accessKey') || !extensionConfig.get('secretKey')) {
+            resolve();
             return;
         }
-
-        let response = JSON.parse(httpResponse['body']);
+        
+        environmentProvider.clearAll();
 
         let awsreq = aws4.sign({
             service: 'cloud9',
@@ -787,10 +770,10 @@ function refreshEnvironmentsInSidebar() {
             method: 'POST',
             path: '/',
             headers: {
-              'Content-Type': 'application/x-amz-json-1.1',
-              'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.DescribeEnvironments'
+            'Content-Type': 'application/x-amz-json-1.1',
+            'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.ListEnvironments'
             },
-            body: '{"environmentIds":' + JSON.stringify(response.environmentIds) + '}'
+            body: '{}'
         },
         {
             secretAccessKey: extensionConfig.get('secretKey'),
@@ -800,14 +783,46 @@ function refreshEnvironmentsInSidebar() {
         request.post({
             url: "https://" + awsreq.hostname + awsreq.path,
             headers: awsreq.headers,
-            body: awsreq.body
+            body: awsreq.body,
+            rejectUnauthorized: false
         }, function(err, httpResponse, env_token) {
-            let response = JSON.parse(httpResponse['body']);
-            if ('environments' in response) {
-                response['environments'].forEach(env => {
-                    environmentProvider.addEnvironment(env);
-                });
+            if (err != null || !httpResponse.statusCode.toString().startsWith("2")) {
+                vscode.window.setStatusBarMessage("Unable to connect to list environments", 5000);
+                resolve();
+                return;
             }
+
+            let response = JSON.parse(httpResponse['body']);
+
+            let awsreq = aws4.sign({
+                service: 'cloud9',
+                region: awsregion,
+                method: 'POST',
+                path: '/',
+                headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.DescribeEnvironments'
+                },
+                body: '{"environmentIds":' + JSON.stringify(response.environmentIds) + '}'
+            },
+            {
+                secretAccessKey: extensionConfig.get('secretKey'),
+                accessKeyId: extensionConfig.get('accessKey')
+            });
+
+            request.post({
+                url: "https://" + awsreq.hostname + awsreq.path,
+                headers: awsreq.headers,
+                body: awsreq.body
+            }, function(err, httpResponse, env_token) {
+                let response = JSON.parse(httpResponse['body']);
+                if ('environments' in response) {
+                    response['environments'].forEach(env => {
+                        environmentProvider.addEnvironment(env);
+                    });
+                    resolve();
+                }
+            });
         });
     });
 }

@@ -69,25 +69,46 @@ export class FileManager {
 
     stat(filename) {
         return new Promise((resolve, reject) => {
+            this.eventEmitter.emit('send_ch4_message', ["stat", "/" + filename, {}, {$: 91}]);
+
+            this.eventEmitter.on('ch4_data', (data, environmentId) => {
+                if (Array.isArray(data)) {
+                    if (data.length>2) {
+                        if (data[0] == 91) {
+                            let contents = data[2];
+                            resolve(contents);
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    listdir(filename): Thenable<Object[]> {
+        return new Promise((resolve, reject) => {
+            if (!filename.endsWith("/")) {
+                filename += "/";
+            }
+
             request.get({
-                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/.c9/metadata/' + filename,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/.c9/metadata/environment/' + filename,
                 jar: this.cookieJar,
                 headers: {
-                    'Content-Type': 'text/plain',
+                    'Content-Type': 'application/json',
                     'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
                 }
             }, function(err, httpResponse, body) {
-                console.warn("START OF STAT");
+                console.warn("LISTDIR RESPONSE");
                 console.log(httpResponse);
                 console.log(body);
-                resolve(""); // REMOVE ME
+                resolve(JSON.parse(body));
             });
         });
     }
     
-    downloadFile(filename, inodePath, inode) {
+    downloadFile(filename, inodePath, inode): Thenable<string> {
         return new Promise((resolve, reject) => {
             request.get({
                 url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
@@ -100,10 +121,13 @@ export class FileManager {
                     'x-authorization': this.xauth
                 }
             }, function(err, httpResponse, body) {
-                console.log("Creating the file " + inodePath);
-                fs.writeFileSync(inodePath, body);
-                //fs.utimes(inodePath, parseInt(inode.mtime/1000), parseInt(inode.mtime/1000), resolve); TODO: Fix
-                resolve(); // REMOVE ME
+                if (inodePath != null) {
+                    console.log("Creating the file " + inodePath);
+                    fs.writeFileSync(inodePath, body);
+                    //fs.utimes(inodePath, parseInt(inode.mtime/1000), parseInt(inode.mtime/1000), resolve); TODO: Fix
+                }
+                console.warn("About to return downloadFile body");
+                resolve(body); // REMOVE ME
             });
         });
     }
