@@ -360,12 +360,14 @@ function commandSetup() {
     }).then(function(regionReponse){
         if (!regionReponse) return;
 
-        extensionConfig.update("accessKey", config['accessKey'], vscode.ConfigurationTarget.Global);
-        extensionConfig.update("secretKey", config['secretKey'], vscode.ConfigurationTarget.Global);
-        extensionConfig.update("region", regionReponse, vscode.ConfigurationTarget.Global);
-
-        vscode.window.setStatusBarMessage('Refreshing environments...', 5000);
-        refreshEnvironmentsInSidebar();
+        extensionConfig.update("accessKey", config['accessKey'], vscode.ConfigurationTarget.Global).then(() => {
+            return extensionConfig.update("secretKey", config['secretKey'], vscode.ConfigurationTarget.Global);
+        }).then(() => {
+            return extensionConfig.update("region", regionReponse, vscode.ConfigurationTarget.Global);
+        }).then(() => {
+            vscode.window.setStatusBarMessage('Refreshing environments...', 5000);
+            refreshEnvironmentsInSidebar();
+        });
     });
 }
 
