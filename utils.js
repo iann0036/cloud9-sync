@@ -3,14 +3,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var vscode = require("vscode");
 var path = require("path");
 function FileNameToUri(fileName) {
-    var filePath = path.join(vscode.workspace.rootPath, fileName);
+    var rootPath = "";
+    vscode.workspace.workspaceFolders.forEach(function (workspaceFolder) {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+    var filePath = path.join(rootPath, fileName);
     return vscode.Uri.file(filePath);
 }
 exports.FileNameToUri = FileNameToUri;
 function ShortenFilePath(filePath) {
-    return filePath.replace(vscode.workspace.rootPath, "").replace("\\", "/");
+    var rootPath = "";
+    vscode.workspace.workspaceFolders.forEach(function (workspaceFolder) {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+    return EnsureLeadingSlash(filePath.replace(rootPath, "").replace("\\", "/"));
 }
 exports.ShortenFilePath = ShortenFilePath;
+function GetShortFilePath(document) {
+    var filePath = document.fileName;
+    var rootPath = "";
+    if (document.uri.scheme == "cloud9") {
+        filePath = "/" + document.uri.path.split("/").slice(2).join('/');
+    }
+    vscode.workspace.workspaceFolders.forEach(function (workspaceFolder) {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+    return filePath.replace(rootPath, "").replace("\\", "/");
+}
+exports.GetShortFilePath = GetShortFilePath;
 function EnsureLeadingSlash(str) {
     if (str[0] != '/' || str[0] != '\\')
         return "/" + str;

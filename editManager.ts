@@ -173,11 +173,11 @@ export class EditManager {
     
         setTimeout((pending_edit_l, prev_text) => {
             this.revNum += 1;
-            let filename = vscode.window.activeTextEditor.document.fileName; // TODO: Not compensating for multi-doc
+            let doc = vscode.window.activeTextEditor.document; // TODO: Not compensating for multi-doc
             let selection = vscode.window.activeTextEditor.selection;
             let edit = pending_edit_l.getEditList(prev_text);
             let seq = this.websocketProvider.send_ch4_message(
-                ["call","collab","send",[this.vfsid,{"type":"EDIT_UPDATE","data":{"docId":Utils.ShortenFilePath(filename),"op":edit,"revNum":this.revNum,"selection":[
+                ["call","collab","send",[this.vfsid,{"type":"EDIT_UPDATE","data":{"docId":Utils.GetShortFilePath(doc),"op":edit,"revNum":this.revNum,"selection":[
                     selection.start.line,
                     selection.start.character,
                     selection.end.line,
@@ -189,8 +189,8 @@ export class EditManager {
 
             pending_edit_l.empty();
 
-            this.lastKnownRemoteDocumentText[Utils.ShortenFilePath(filename)] = this.lastKnownLocalDocumentText[Utils.ShortenFilePath(filename)];
-        }, 1, this.pending_edit, this.lastKnownRemoteDocumentText[Utils.ShortenFilePath(vscode.window.activeTextEditor.document.fileName)]); // TODO: Fix bad selection hack
+            this.lastKnownRemoteDocumentText[Utils.GetShortFilePath(doc)] = this.lastKnownLocalDocumentText[Utils.GetShortFilePath(doc)];
+        }, 1, this.pending_edit, this.lastKnownRemoteDocumentText[Utils.GetShortFilePath(vscode.window.activeTextEditor.document)]); // TODO: Fix bad selection hack
     }
 
     queuePendingEdit(r, d, i) {
@@ -222,12 +222,15 @@ export class EditManager {
         
         console.log("NON REMOTE EDIT");
 
-        let prevText = this.lastKnownLocalDocumentText[Utils.ShortenFilePath(evt.document.fileName)];
+        let path = Utils.GetShortFilePath(evt.document);
+
+        let prevText = this.lastKnownLocalDocumentText[path];
         if (prevText === undefined) {
-            console.warn("undefined lastKnownLocalDocumentText for: " + Utils.ShortenFilePath(evt.document.fileName));
+            console.warn("undefined lastKnownLocalDocumentText for: " + path);
+            console.log(this.lastKnownLocalDocumentText);
             return;
         }
-        this.lastKnownLocalDocumentText[Utils.ShortenFilePath(evt.document.fileName)] = evt.document.getText();
+        this.lastKnownLocalDocumentText[path] = evt.document.getText();
         let delText = prevText.substring(change.rangeOffset, change.rangeOffset + change.rangeLength);
         
         this.queuePendingEdit(

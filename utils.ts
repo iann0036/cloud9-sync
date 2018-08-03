@@ -2,12 +2,45 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 export function FileNameToUri(fileName): vscode.Uri {
-    const filePath = path.join(vscode.workspace.rootPath, fileName);
+    let rootPath = "";
+
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+
+    const filePath = path.join(rootPath, fileName);
     return vscode.Uri.file(filePath);
 }
 
 export function ShortenFilePath(filePath): string {
-    return filePath.replace(vscode.workspace.rootPath, "").replace("\\","/");
+    let rootPath = "";
+
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+
+    return EnsureLeadingSlash(filePath.replace(rootPath, "").replace("\\","/"));
+}
+
+export function GetShortFilePath(document: vscode.TextDocument): string {
+    let filePath = document.fileName;
+    let rootPath = "";
+    
+    if (document.uri.scheme == "cloud9") {
+        filePath = "/" + document.uri.path.split("/").slice(2).join('/');
+    }
+
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+
+    return filePath.replace(rootPath, "").replace("\\","/");
 }
 
 export function EnsureLeadingSlash(str): string {

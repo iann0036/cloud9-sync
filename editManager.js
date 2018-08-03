@@ -152,10 +152,10 @@ var EditManager = /** @class */ (function () {
         console.log("SENDING PENDING EDITS");
         setTimeout(function (pending_edit_l, prev_text) {
             _this.revNum += 1;
-            var filename = vscode.window.activeTextEditor.document.fileName; // TODO: Not compensating for multi-doc
+            var doc = vscode.window.activeTextEditor.document; // TODO: Not compensating for multi-doc
             var selection = vscode.window.activeTextEditor.selection;
             var edit = pending_edit_l.getEditList(prev_text);
-            var seq = _this.websocketProvider.send_ch4_message(["call", "collab", "send", [_this.vfsid, { "type": "EDIT_UPDATE", "data": { "docId": Utils.ShortenFilePath(filename), "op": edit, "revNum": _this.revNum, "selection": [
+            var seq = _this.websocketProvider.send_ch4_message(["call", "collab", "send", [_this.vfsid, { "type": "EDIT_UPDATE", "data": { "docId": Utils.GetShortFilePath(doc), "op": edit, "revNum": _this.revNum, "selection": [
                                 selection.start.line,
                                 selection.start.character,
                                 selection.end.line,
@@ -164,8 +164,8 @@ var EditManager = /** @class */ (function () {
                             ] } }]]);
             _this.last_unacknowledged_edit = seq;
             pending_edit_l.empty();
-            _this.lastKnownRemoteDocumentText[Utils.ShortenFilePath(filename)] = _this.lastKnownLocalDocumentText[Utils.ShortenFilePath(filename)];
-        }, 1, this.pending_edit, this.lastKnownRemoteDocumentText[Utils.ShortenFilePath(vscode.window.activeTextEditor.document.fileName)]); // TODO: Fix bad selection hack
+            _this.lastKnownRemoteDocumentText[Utils.GetShortFilePath(doc)] = _this.lastKnownLocalDocumentText[Utils.GetShortFilePath(doc)];
+        }, 1, this.pending_edit, this.lastKnownRemoteDocumentText[Utils.GetShortFilePath(vscode.window.activeTextEditor.document)]); // TODO: Fix bad selection hack
     };
     EditManager.prototype.queuePendingEdit = function (r, d, i) {
         this.pending_edit.addEdit(parseInt(r), d, i);
@@ -192,12 +192,14 @@ var EditManager = /** @class */ (function () {
             });
         }
         console.log("NON REMOTE EDIT");
-        var prevText = this.lastKnownLocalDocumentText[Utils.ShortenFilePath(evt.document.fileName)];
+        var path = Utils.GetShortFilePath(evt.document);
+        var prevText = this.lastKnownLocalDocumentText[path];
         if (prevText === undefined) {
-            console.warn("undefined lastKnownLocalDocumentText for: " + Utils.ShortenFilePath(evt.document.fileName));
+            console.warn("undefined lastKnownLocalDocumentText for: " + path);
+            console.log(this.lastKnownLocalDocumentText);
             return;
         }
-        this.lastKnownLocalDocumentText[Utils.ShortenFilePath(evt.document.fileName)] = evt.document.getText();
+        this.lastKnownLocalDocumentText[path] = evt.document.getText();
         var delText = prevText.substring(change.rangeOffset, change.rangeOffset + change.rangeLength);
         this.queuePendingEdit((change.rangeOffset != 0 ? change.rangeOffset.toString() : null), (change.rangeLength > 0 ? delText : null), (change.text.length > 0 ? change.text : null));
         console.log("Queued pending");

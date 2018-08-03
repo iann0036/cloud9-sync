@@ -375,9 +375,12 @@ function setEventEmitterEvents() {
     });
 
     eventEmitter.on('request_connect', (environment) => {
-        setTimeout(() => {
+        refreshEnvironmentsInSidebar().then(() => {
             commandConnect(environment);
-        }, 5000);
+        });
+        /*setTimeout(() => {
+            
+        }, 5000);*/
     });
 
     eventEmitter.on('disconnect', () => {
@@ -401,12 +404,12 @@ function setEventEmitterEvents() {
             join_doc_chunks = [];
             websocketProvider.send_ch4_message(
                 ["call","collab","send",[vfsid,{"type": "JOIN_DOC","data": {
-                    "docId": Utils.ShortenFilePath(editor.document.fileName),
+                    "docId": Utils.GetShortFilePath(editor.document),
                     "reqId": Math.floor(9007199254740992*Math.random())
                 }}]]
             );
             websocketProvider.send_ch4_message(
-                ["watch", Utils.ShortenFilePath(editor.document.fileName), {}, {$: 10}]
+                ["watch", Utils.GetShortFilePath(editor.document), {}, {$: 10}]
             );
             visibleDocuments.push(editor.document.fileName);
         });
@@ -509,37 +512,48 @@ function setEventEmitterEvents() {
             join_doc_chunks = [];
     
             let inodePath = path.join(vscode.workspace.rootPath, "/" + event_data["docId"]);
+            let document = null;
+
+            vscode.workspace.textDocuments.forEach(doc => {
+                console.log(Utils.GetShortFilePath(doc) + " != " + "/" + event_data["docId"]);
+                if (Utils.GetShortFilePath(doc) == "/" + event_data["docId"]) {
+                    document = doc;
+                }
+            });
+
+            if (document == null) {
+                console.warn("Couldn't find document to process JOIN_DOC");
+                return;
+            }
     
-            vscode.workspace.openTextDocument(inodePath).then((document) => {
-                let edit = new vscode.WorkspaceEdit();
-                edit.replace(
-                    document.uri,
-                    new vscode.Range(
-                        document.positionAt(0),
-                        document.positionAt(9999999999999999999999) // TODO: Fix hack
-                    ),
-                    join_doc_response['contents']
-                )
-                editManager.addRemoteEdit(edit);
-                vscode.workspace.applyEdit(edit);
-                
-                editManager.lastKnownRemoteDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
-                editManager.lastKnownLocalDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
-                console.log("Initialized lastKnownTexts for doc: " + Utils.ShortenFilePath(inodePath));
-                editManager.revNum = join_doc_response['revNum'];
-    
-                // Set Selections
-    
-                Object.values(join_doc_response['selections']).forEach(client => {
-                    let internalclient = clients[client["clientId"]];
-    
-                    userManager.setPosition(client["clientId"], inodePath, document, {
-                        start: new vscode.Position(client["selection"][0], client["selection"][1]),
-                        end: new vscode.Position(client["selection"][2], client["selection"][3])
-                    }, client["selection"][4]);
-    
-                    internalclient['client'].refresh();
-                });
+            let edit = new vscode.WorkspaceEdit();
+            edit.replace(
+                document.uri,
+                new vscode.Range(
+                    document.positionAt(0),
+                    document.positionAt(9999999999999999999999) // TODO: Fix hack
+                ),
+                join_doc_response['contents']
+            )
+            editManager.addRemoteEdit(edit);
+            vscode.workspace.applyEdit(edit);
+            
+            editManager.lastKnownRemoteDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
+            editManager.lastKnownLocalDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
+            console.log("Initialized lastKnownTexts for doc: " + Utils.ShortenFilePath(inodePath));
+            editManager.revNum = join_doc_response['revNum'];
+
+            // Set Selections
+
+            Object.values(join_doc_response['selections']).forEach(client => {
+                let internalclient = clients[client["clientId"]];
+
+                userManager.setPosition(client["clientId"], inodePath, document, {
+                    start: new vscode.Position(client["selection"][0], client["selection"][1]),
+                    end: new vscode.Position(client["selection"][2], client["selection"][3])
+                }, client["selection"][4]);
+
+                internalclient['client'].refresh();
             });
         }
     });
@@ -601,14 +615,14 @@ function setEventEmitterEvents() {
         //event_data['selection'] == [1,2,3,4,5]
         let fileName = event_data["docId"];
     
-        let documentUri = Utils.FileNameToUri(fileName);
         let editCursor = 0;
         let textDocument = null;
         vscode.workspace.textDocuments.forEach(td => {
-            if (td.uri.fsPath == documentUri.fsPath) {
+            if (Utils.GetShortFilePath(td) == Utils.EnsureLeadingSlash(fileName)) {
                 textDocument = td;
             }
         });
+        let documentUri = textDocument.uri;
 
         if (textDocument == null) {
             console.warn("Could not find document for EDIT_UPDATE");
@@ -761,8 +775,6 @@ function refreshEnvironmentsInSidebar() {
             resolve();
             return;
         }
-        
-        environmentProvider.clearAll();
 
         let awsreq = aws4.sign({
             service: 'cloud9',
@@ -817,6 +829,7 @@ function refreshEnvironmentsInSidebar() {
             }, function(err, httpResponse, env_token) {
                 let response = JSON.parse(httpResponse['body']);
                 if ('environments' in response) {
+                    environmentProvider.clearAll(); // TODO: Make this do a merge instead of replace
                     response['environments'].forEach(env => {
                         environmentProvider.addEnvironment(env);
                     });
@@ -1188,7 +1201,8 @@ function createWatchers() {
     vscode.window.onDidChangeVisibleTextEditors(function(evt) {
         let newVisibleDocuments = [];
         evt.forEach(visibleEditors => {
-            newVisibleDocuments.push(visibleEditors.document.fileName);
+            console.log("new visible document: " + Utils.GetShortFilePath(visibleEditors.document));
+            newVisibleDocuments.push(Utils.GetShortFilePath(visibleEditors.document));
         });
     
         newVisibleDocuments.forEach(newVisibleDocument => {
@@ -1197,12 +1211,12 @@ function createWatchers() {
                 join_doc_chunks = [];
                 websocketProvider.send_ch4_message(
                     ["call","collab","send",[vfsid,{"type": "JOIN_DOC","data": {
-                        "docId": Utils.ShortenFilePath(newVisibleDocument),
+                        "docId": newVisibleDocument,
                         "reqId": Math.floor(9007199254740992*Math.random())
                     }}]]
                 );
                 websocketProvider.send_ch4_message(
-                    ["watch", Utils.ShortenFilePath(newVisibleDocument), {}, {$: 10}]
+                    ["watch", newVisibleDocument, {}, {$: 10}]
                 );
             }
         });
@@ -1211,7 +1225,7 @@ function createWatchers() {
                 console.log("Leaving document: " + visibleDocument);
                 websocketProvider.send_ch4_message(
                     ["call","collab","send",[vfsid,{"type":"LEAVE_DOC","data":{
-                        "docId": Utils.ShortenFilePath(visibleDocument)
+                        "docId": visibleDocument
                     }}]]
                 );
             }

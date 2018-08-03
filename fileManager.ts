@@ -126,7 +126,6 @@ export class FileManager {
                     fs.writeFileSync(inodePath, body);
                     //fs.utimes(inodePath, parseInt(inode.mtime/1000), parseInt(inode.mtime/1000), resolve); TODO: Fix
                 }
-                console.warn("About to return downloadFile body");
                 resolve(body); // REMOVE ME
             });
         });
