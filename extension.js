@@ -448,12 +448,14 @@ function setEventEmitterEvents() {
             state: event_data["user"]["state"]
         };
         console.log(clients);
+        userProvider.setUserState(event_data["userId"], event_data["user"]["state"]);
         vscode.window.setStatusBarMessage(event_data["user"]["name"] + ' has joined the workspace', 5000);
     });
     
     eventEmitter.on('USER_LEAVE', (event_data) => {
         if (event_data["clientId"] == vfsid) return;
         vscode.window.setStatusBarMessage(clients[event_data["clientId"]]["name"] + ' has left the workspace', 5000);
+        userProvider.setUserState(event_data["userId"], "offline"); // TODO: Check for multiple online clients
         clients[event_data["clientId"]]["client"].destroy();
         userManager.removeClient(event_data["clientId"]);
         clients.splice(event_data["clientId"], 1);
@@ -546,7 +548,7 @@ function setEventEmitterEvents() {
                 };
                 console.log("Finished adding client");
             });
-            userProvider.addUser(user["name"], user['state']);
+            userProvider.addUser(user["userId"], user["name"], user['state']);
         });
         Object.values(event_data["chatHistory"]).forEach(chat => {
             chatProvider.addChatItem(chat["id"], chat["userId"], chat["name"], chat["text"], chat["timestamp"]);
@@ -658,9 +660,7 @@ function setEventEmitterEvents() {
                     client['client'].refresh();
                 });
 
-                console.warn("DBG 1: Updating lastKnown from extension.js");
                 editManager.lastKnownRemoteDocumentText[Utils.EnsureLeadingSlash(fileName)] = textDocument.getText();
-
                 
                 console.log("Finish processing EDIT_UPDATE");
             });
@@ -686,7 +686,9 @@ function setEventEmitterEvents() {
             });
     });
 
-    // TODO: eventEmitter.on('USER_STATE', (event_data) => {     event_data.state == idle
+    eventEmitter.on('USER_STATE', (event_data) => {
+        userProvider.setUserState(event_data.userId, event_data.state);
+    });
     
     eventEmitter.on('ch4_data', (data, environmentId) => {
         if (Array.isArray(data)) {
@@ -694,7 +696,7 @@ function setEventEmitterEvents() {
                 if (data[0] == "onData") {
                     try {
                         let contents = JSON.parse(data[2]);
-                        if ([ // TODO: USER_STATE
+                        if ([ // TODO: FILE_SAVED
                             "USER_JOIN",
                             "USER_LEAVE",
                             "JOIN_DOC",
@@ -704,6 +706,7 @@ function setEventEmitterEvents() {
                             "CURSOR_UPDATE",
                             "CHAT_MESSAGE",
                             //"GENERIC_BROADCAST",
+                            "USER_STATE",
                             "CLEAR_CHAT"
                         ].includes(contents["type"])) {
                             eventEmitter.emit(contents["type"], contents["data"]); // TODO: Handle unknown events

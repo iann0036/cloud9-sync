@@ -14,26 +14,28 @@ var vscode = require("vscode");
 var path = require("path");
 var User = /** @class */ (function (_super) {
     __extends(User, _super);
-    function User(label, state, collapsibleState, command) {
-        var _this = _super.call(this, label + " (" + state + ")", collapsibleState) || this;
-        _this.label = label;
+    function User(userid, name, state, collapsibleState, command) {
+        var _this = _super.call(this, name, collapsibleState) || this;
+        _this.userid = userid;
+        _this.name = name;
         _this.state = state;
         _this.collapsibleState = collapsibleState;
         _this.command = command;
-        _this.iconPath = {
-            light: path.join(__filename, '..', 'resources', 'icons', _this.state + '.png'),
-            dark: path.join(__filename, '..', 'resources', 'icons', _this.state + '.png')
-        };
+        _this.iconPath = path.join(__filename, '..', 'resources', 'icons', _this.state + '.png');
         _this.contextValue = 'user';
         return _this;
     }
     Object.defineProperty(User.prototype, "tooltip", {
         get: function () {
-            return this.label + " (" + this.state + ")";
+            return this.name + " (" + this.state + ")";
         },
         enumerable: true,
         configurable: true
     });
+    User.prototype.setState = function (state) {
+        this.state = state;
+        this.iconPath = path.join(__filename, '..', 'resources', 'icons', state + '.png');
+    };
     return User;
 }(vscode.TreeItem));
 exports.User = User;
@@ -50,9 +52,17 @@ var UserProvider = /** @class */ (function () {
         })*/
         ];
     }
-    UserProvider.prototype.addUser = function (name, state) {
-        var user = new User(name, state, vscode.TreeItemCollapsibleState.None);
+    UserProvider.prototype.addUser = function (userid, name, state) {
+        var user = new User(userid, name, state, vscode.TreeItemCollapsibleState.None);
         this.users.push(user);
+        this.refresh();
+    };
+    UserProvider.prototype.setUserState = function (userid, state) {
+        this.users.forEach(function (user) {
+            if (user.userid == userid) {
+                user.setState(state);
+            }
+        });
         this.refresh();
     };
     UserProvider.prototype.clearAll = function () {
@@ -89,10 +99,7 @@ var Environment = /** @class */ (function (_super) {
         _this.type = type;
         _this.collapsibleState = collapsibleState;
         _this.command = command;
-        _this.iconPath = {
-            light: path.join(__filename, '..', 'resources', 'icons', 'env.png'),
-            dark: path.join(__filename, '..', 'resources', 'icons', 'env.png')
-        };
+        _this.iconPath = path.join(__filename, '..', 'resources', 'icons', 'env.png');
         _this.contextValue = 'disconnectedEnvironment';
         _this.label = name;
         _this.state = "NOT_CONNECTED";
@@ -199,10 +206,7 @@ var Chat = /** @class */ (function (_super) {
         _this.name = name;
         _this.message = message;
         _this.timestamp = timestamp;
-        _this.iconPath = {
-            light: path.join(__filename, '..', 'resources', 'icons', 'chat.png'),
-            dark: path.join(__filename, '..', 'resources', 'icons', 'chat.png')
-        };
+        _this.iconPath = path.join(__filename, '..', 'resources', 'icons', 'chat.png');
         _this.contextValue = 'chatItem';
         return _this;
     }

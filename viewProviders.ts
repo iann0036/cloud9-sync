@@ -5,22 +5,25 @@ import * as path from 'path';
 export class User extends vscode.TreeItem {
 
 	constructor(
-		public readonly label: string,
-		public readonly state: string,
+		public readonly userid: string,
+		public name: string,
+		public state: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
 		public readonly command?: vscode.Command
 	) {
-		super(label + " (" + state + ")", collapsibleState);
+		super(name, collapsibleState);
 	}
 
 	get tooltip(): string {
-		return `${this.label} (${this.state})`
+		return `${this.name} (${this.state})`
 	}
 
-	iconPath = {
-		light: path.join(__filename, '..', 'resources', 'icons', this.state + '.png'),
-		dark: path.join(__filename, '..', 'resources', 'icons', this.state + '.png')
-	};
+	setState(state: string): void {
+		this.state = state;
+		this.iconPath = path.join(__filename, '..', 'resources', 'icons', state + '.png');
+	}
+
+	iconPath = path.join(__filename, '..', 'resources', 'icons', this.state + '.png');
 
 	contextValue = 'user';
 }
@@ -42,9 +45,18 @@ export class UserProvider implements vscode.TreeDataProvider<User> {
 		];
 	}
 
-	addUser(name: string, state: string): void {
-		let user = new User(name, state, vscode.TreeItemCollapsibleState.None);
+	addUser(userid: string, name: string, state: string): void {
+		let user = new User(userid, name, state, vscode.TreeItemCollapsibleState.None);
 		this.users.push(user);
+		this.refresh();
+	}
+
+	setUserState(userid: string, state: string): void {
+		this.users.forEach(user => {
+			if (user.userid == userid) {
+				user.setState(state);
+			}
+		});
 		this.refresh();
 	}
 
@@ -136,10 +148,7 @@ class Environment extends vscode.TreeItem {
 		return `${this.label}`
 	}
 
-	iconPath = {
-		light: path.join(__filename, '..', 'resources', 'icons', 'env.png'),
-		dark: path.join(__filename, '..', 'resources', 'icons', 'env.png')
-	};
+	iconPath = path.join(__filename, '..', 'resources', 'icons', 'env.png');
 
 	contextValue = 'disconnectedEnvironment';
 }
@@ -216,10 +225,7 @@ class Chat extends vscode.TreeItem {
 		return this.timestamp.toString(); // TODO: Fix me
 	}
 
-	iconPath = {
-		light: path.join(__filename, '..', 'resources', 'icons', 'chat.png'),
-		dark: path.join(__filename, '..', 'resources', 'icons', 'chat.png')
-	};
+	iconPath = path.join(__filename, '..', 'resources', 'icons', 'chat.png');
 
 	contextValue = 'chatItem';
 }

@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.8.2]
+- Environment member status updates are now reflected
+
 ## [0.8.1]
 - Fix selection highlighter expanding with cursor
 - Fix terminal close event for legacy terminal emulator
