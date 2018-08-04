@@ -20,20 +20,16 @@ export class FileManager {
     }
 
     getFileWorkspacePath() {
-        console.warn("getFileWorkspacePath");
         if (vscode.workspace.workspaceFolders) {
             let folders = vscode.workspace.workspaceFolders;
             let workspaceFolder;
             while (workspaceFolder = folders.pop()) {
-                console.log(workspaceFolder);
                 if (workspaceFolder.uri.scheme == "file") {
-                    console.log("Returning " + workspaceFolder.uri.fsPath);
                     return workspaceFolder.uri.fsPath;
                 }
             };
         }
 
-        console.warn("Returning NULL");
         return null;
     }
 
@@ -56,8 +52,6 @@ export class FileManager {
                     }
 
                     let workspacePath = this.getFileWorkspacePath();
-                    console.warn("Fully returned path:");
-                    console.log(workspacePath);
 
                     if (workspacePath == null) {
                         vscode.window.showWarningMessage("Could not find local directory to sync to");
@@ -149,7 +143,7 @@ export class FileManager {
                 }
             }, function(err, httpResponse, body) {
                 if (inodePath != null) {
-                    console.log("Creating the file " + inodePath);
+                    console.log("Downloading the file " + inodePath);
                     fs.writeFileSync(inodePath, body);
                     //fs.utimes(inodePath, parseInt(inode.mtime/1000), parseInt(inode.mtime/1000), resolve); TODO: Fix
                 }
@@ -194,7 +188,21 @@ export class FileManager {
             }, function(err, httpResponse, body) {
                 console.log(httpResponse);
                 console.log(body);
-                resolve();
+
+                if (httpResponse.statusCode == 429) { // retry with backoff
+                    console.warn("retrying with backoff");
+
+                    let response = JSON.parse(httpResponse);
+                    setTimeout(() => {
+                        this.uploadRemoteFile(filename, content).then(() => {
+                            resolve();
+                        }).catch(err => {
+                            reject(err);
+                        });
+                    }, response.error.retryIn);
+                } else {
+                    resolve();
+                }
             });
         });
     }

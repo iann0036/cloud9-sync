@@ -101,6 +101,7 @@ var TerminalManager = /** @class */ (function () {
         if (typeof data == "string") {
             terminal['terminal'].write(data);
             if (terminal['shared']) {
+                /// 4{"ack":20042,"seq":10051,"d":["onData",10,"{\"type\":\"MESSAGE\",\"data\":{\"source\":\"9c0r243bg2MEXXXX\",\"target\":\"9cmXSwNs63hEXXXX\",\"action\":\"listOpenFiles\",\"docId\":\"\"},\"command\":\"vfs-collab\"}"]}
                 this.eventEmitter.emit('send_ch4_message', ["call", "collab", "send", [this.vfsid, { "type": "GENERIC_BROADCAST", "data": { "exttype": "terminal_data", "data": data, "tid": terminal['tid'], "sender": this.vfsid } }]]);
             }
         }

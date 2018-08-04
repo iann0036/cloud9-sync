@@ -402,6 +402,16 @@ function setEventEmitterEvents() {
         chatProvider.clearAll();
         websocketProvider.disconnect();
         clearInterval(connectionRefreshInterval);
+
+        /*
+        if (vscode.workspace.workspaceFolders) {
+            vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+                if (workspaceFolder.uri.scheme == "cloud9" && workspaceFolder.uri.path.startsWith("/" + connectedEnvironment.id)) {
+                    vscode.workspace.updateWorkspaceFolders(workspaceFolder.index, 1);
+                }
+            });
+        }
+        */
     });
 
     eventEmitter.on('websocket_init_complete', () => {

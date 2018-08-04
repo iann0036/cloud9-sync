@@ -12,20 +12,16 @@ var FileManager = /** @class */ (function () {
         this.awsregion = Utils.GetRegion();
     }
     FileManager.prototype.getFileWorkspacePath = function () {
-        console.warn("getFileWorkspacePath");
         if (vscode.workspace.workspaceFolders) {
             var folders = vscode.workspace.workspaceFolders;
             var workspaceFolder = void 0;
             while (workspaceFolder = folders.pop()) {
-                console.log(workspaceFolder);
                 if (workspaceFolder.uri.scheme == "file") {
-                    console.log("Returning " + workspaceFolder.uri.fsPath);
                     return workspaceFolder.uri.fsPath;
                 }
             }
             ;
         }
-        console.warn("Returning NULL");
         return null;
     };
     FileManager.prototype.recursiveDownload = function (startPath) {
@@ -47,8 +43,6 @@ var FileManager = /** @class */ (function () {
                         return Promise.resolve();
                     }
                     var workspacePath = _this.getFileWorkspacePath();
-                    console.warn("Fully returned path:");
-                    console.log(workspacePath);
                     if (workspacePath == null) {
                         vscode.window.showWarningMessage("Could not find local directory to sync to");
                         return Promise.reject();
@@ -137,7 +131,7 @@ var FileManager = /** @class */ (function () {
                 }
             }, function (err, httpResponse, body) {
                 if (inodePath != null) {
-                    console.log("Creating the file " + inodePath);
+                    console.log("Downloading the file " + inodePath);
                     fs.writeFileSync(inodePath, body);
                     //fs.utimes(inodePath, parseInt(inode.mtime/1000), parseInt(inode.mtime/1000), resolve); TODO: Fix
                 }
@@ -179,9 +173,23 @@ var FileManager = /** @class */ (function () {
                 },
                 body: content
             }, function (err, httpResponse, body) {
+                var _this = this;
                 console.log(httpResponse);
                 console.log(body);
-                resolve();
+                if (httpResponse.statusCode == 429) { // retry with backoff
+                    console.warn("retrying with backoff");
+                    var response = JSON.parse(httpResponse);
+                    setTimeout(function () {
+                        _this.uploadRemoteFile(filename, content).then(function () {
+                            resolve();
+                        }).catch(function (err) {
+                            reject(err);
+                        });
+                    }, response.error.retryIn);
+                }
+                else {
+                    resolve();
+                }
             });
         });
     };

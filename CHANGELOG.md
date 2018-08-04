@@ -3,6 +3,7 @@
 ## [0.9.1]
 - Completed experimental file system provider
 - Fixed sync to local file system when provider is active
+- Synchronization now respects backoff requests from server
 
 ## [0.9.0]
 - Added experimental file system provider
