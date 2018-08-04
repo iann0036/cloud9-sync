@@ -91,9 +91,16 @@ function activate(context) {
     const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager, eventEmitter);
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider('cloud9', cloud9fs, { isCaseSensitive: true }));
 
-    //vscode.commands.executeCommand("workbench.action.reloadWindow");
-
-    refreshEnvironmentsInSidebar();
+    refreshEnvironmentsInSidebar().then(() => {
+        if (vscode.workspace.workspaceFolders) {
+            vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+                if (workspaceFolder.uri.scheme == "cloud9") {
+                    vscode.commands.executeCommand("workbench.files.action.refreshFilesExplorer");
+                    return;
+                }
+            });
+        }
+    });
 }
 exports.activate = activate;
 
@@ -450,6 +457,19 @@ function setEventEmitterEvents() {
                 statusBarItem.text = '$(globe) Connected to the \'' + connectedEnvironment['name'] + '\' environment';
                 statusBarItem.show();
             });
+        }
+
+        /* Don't prompt to sync if no file workspaces exist */
+        let foundFileWorkspace = false;
+        if (vscode.workspace.workspaceFolders) {
+            vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+                if (workspaceFolder.uri.scheme == "file") {
+                    foundFileWorkspace = true;
+                }
+            });
+        }
+        if (!foundFileWorkspace) {
+            syncStrategy = "none";
         }
         
         if (syncStrategy == "prompt") {

@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.9.1]
+- Completed experimental file system provider
+- Fixed sync to local file system when provider is active
+
 ## [0.9.0]
 - Added experimental file system provider
 - Environment member status updates are now reflected

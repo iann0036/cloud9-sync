@@ -128,7 +128,7 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
                 this.fileManager.listdir(splituri.slice(2).join('/')).then(stats => {
                     let converted_stats = [];
                     stats.forEach(stat => {
-                        let converted_stat = [splituri.slice(2).join('/') + stat['name'], vscode.FileType.File];
+                        let converted_stat = [stat['name'], vscode.FileType.File];
                         if (stat['mime'] == "inode/directory") {
                             converted_stat[1] = vscode.FileType.Directory;
                         }
@@ -155,16 +155,35 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
         });
     }
 
-    writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean, overwrite: boolean }): void {
-        ;
-
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
+    writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean, overwrite: boolean }): Thenable<void> {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                if (options.create) {
+                    this.fileManager.uploadRemoteFile("/" + splituri.slice(2).join('/'), content.toString()).then(() => {
+                        resolve();
+                        this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
+                        return;
+                    });
+                } else if (options.overwrite) {
+                    this.fileManager.uploadExistingFile("/" + splituri.slice(2).join('/'), content.toString()).then(() => {
+                        resolve();
+                        this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
+                        return;
+                    });
+                }
+            });
+        });
     }
 
     // --- manage files/folders
 
-    rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void {
-        ;
+    rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void { // TODO: Check return
+        let oldsplituri = oldUri.path.split("/");
+        let newsplituri = newUri.path.split("/");
+        
+        this.eventEmitter.emit("send_ch4_message", ["rename","/" + newsplituri.slice(2).join('/'),{"from":"/" + oldsplituri.slice(2).join('/')},{"$":92}]);
 
         this._fireSoon(
             { type: vscode.FileChangeType.Deleted, uri: oldUri },
@@ -172,16 +191,31 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
         );
     }
 
-    delete(uri: vscode.Uri): void {
-        ;
-
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { uri, type: vscode.FileChangeType.Deleted });
+    delete(uri: vscode.Uri): Thenable<void> {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.deleteRemoteFile("/" + splituri.slice(2).join('/')).then(() => {
+                    resolve();
+                    this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { uri, type: vscode.FileChangeType.Deleted });
+                    return;
+                });
+            });
+        });
     }
 
-    createDirectory(uri: vscode.Uri): void {
-        ;
+    createDirectory(uri: vscode.Uri): Thenable<void> {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
 
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri });
+            this.eventEmitter.emit("send_ch4_message", ["mkdir","/" + splituri.slice(2).join('/'),{},{"$":93}]);
+
+            setTimeout(() => { // TODO: Fix dodgy timeout
+                this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri });
+                resolve();
+            }, 200);
+        });
     }
 
     // --- manage file events

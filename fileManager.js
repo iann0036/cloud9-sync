@@ -11,6 +11,23 @@ var FileManager = /** @class */ (function () {
         this.eventEmitter = eventEmitter;
         this.awsregion = Utils.GetRegion();
     }
+    FileManager.prototype.getFileWorkspacePath = function () {
+        console.warn("getFileWorkspacePath");
+        if (vscode.workspace.workspaceFolders) {
+            var folders = vscode.workspace.workspaceFolders;
+            var workspaceFolder = void 0;
+            while (workspaceFolder = folders.pop()) {
+                console.log(workspaceFolder);
+                if (workspaceFolder.uri.scheme == "file") {
+                    console.log("Returning " + workspaceFolder.uri.fsPath);
+                    return workspaceFolder.uri.fsPath;
+                }
+            }
+            ;
+        }
+        console.warn("Returning NULL");
+        return null;
+    };
     FileManager.prototype.recursiveDownload = function (startPath) {
         var _this = this;
         console.log("Performing lookup from " + startPath);
@@ -29,7 +46,14 @@ var FileManager = /** @class */ (function () {
                     if (startPath + "/" + inode['name'] == "/.c9" || startPath + "/" + inode['name'] == "/.vscode") {
                         return Promise.resolve();
                     }
-                    var inodePath = path.join(vscode.workspace.rootPath, startPath + "/" + inode['name']);
+                    var workspacePath = _this.getFileWorkspacePath();
+                    console.warn("Fully returned path:");
+                    console.log(workspacePath);
+                    if (workspacePath == null) {
+                        vscode.window.showWarningMessage("Could not find local directory to sync to");
+                        return Promise.reject();
+                    }
+                    var inodePath = path.join(workspacePath, startPath + "/" + inode['name']);
                     if (inode['mime'] == "inode/directory") {
                         if (!fs.existsSync(inodePath)) {
                             console.log("Creating the directory " + inodePath);
@@ -122,58 +146,76 @@ var FileManager = /** @class */ (function () {
         });
     };
     FileManager.prototype.uploadExistingFile = function (filename, content) {
-        request.post({
-            url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
-            jar: this.cookieJar,
-            headers: {
-                'Content-Type': 'text/plain',
-                'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
-                'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
-                'x-authorization': this.xauth
-            },
-            body: content
-        }, function (err, httpResponse, body) {
-            console.log(httpResponse);
-            console.log(body);
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            request.post({
+                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
+                jar: _this.cookieJar,
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
+                    'x-authorization': _this.xauth
+                },
+                body: content
+            }, function (err, httpResponse, body) {
+                console.log(httpResponse);
+                console.log(body);
+                resolve();
+            });
         });
     };
     FileManager.prototype.uploadRemoteFile = function (filename, content) {
-        request.put({
-            url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
-            jar: this.cookieJar,
-            headers: {
-                'Content-Type': 'text/plain',
-                'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
-                'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
-                'x-authorization': this.xauth
-            },
-            body: content
-        }, function (err, httpResponse, body) {
-            console.log(httpResponse);
-            console.log(body);
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            request.put({
+                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
+                jar: _this.cookieJar,
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
+                    'x-authorization': _this.xauth
+                },
+                body: content
+            }, function (err, httpResponse, body) {
+                console.log(httpResponse);
+                console.log(body);
+                resolve();
+            });
         });
     };
     FileManager.prototype.deleteRemoteFile = function (filename) {
-        request.delete({
-            url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
-            jar: this.cookieJar,
-            headers: {
-                'Content-Type': 'text/plain',
-                'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
-                'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
-                'x-authorization': this.xauth
-            }
-        }, function (err, httpResponse, body) {
-            console.log(err);
-            console.log(httpResponse);
-            console.log(body);
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            request.delete({
+                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
+                jar: _this.cookieJar,
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
+                    'x-authorization': _this.xauth
+                }
+            }, function (err, httpResponse, body) {
+                console.log(err);
+                console.log(httpResponse);
+                console.log(body);
+                resolve();
+            });
         });
     };
     FileManager.prototype.recursiveUpload = function (startPath) {
         var _this = this;
         console.log("Performing lookup from " + startPath);
         return new Promise(function (resolve, reject) {
-            var inodePath = path.join(vscode.workspace.rootPath, startPath + "/");
+            var workspacePath = _this.getFileWorkspacePath();
+            if (workspacePath == null) {
+                vscode.window.showWarningMessage("Could not find local directory to sync to");
+                reject("no local directory");
+                return;
+            }
+            var inodePath = path.join(workspacePath, startPath + "/");
             request.get({
                 url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment' + Utils.EnsureLeadingSlash(startPath) + "/",
                 jar: _this.cookieJar,

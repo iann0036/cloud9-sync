@@ -101,7 +101,7 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
                 _this.fileManager.listdir(splituri.slice(2).join('/')).then(function (stats) {
                     var converted_stats = [];
                     stats.forEach(function (stat) {
-                        var converted_stat = [splituri.slice(2).join('/') + stat['name'], vscode.FileType.File];
+                        var converted_stat = [stat['name'], vscode.FileType.File];
                         if (stat['mime'] == "inode/directory") {
                             converted_stat[1] = vscode.FileType.Directory;
                         }
@@ -127,21 +127,59 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
         });
     };
     Cloud9FileSystemProvider.prototype.writeFile = function (uri, content, options) {
-        ;
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri });
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var splituri = uri.path.split("/");
+            var environmentId = splituri[1];
+            _this._getEnvConnection(environmentId).then(function () {
+                if (options.create) {
+                    _this.fileManager.uploadRemoteFile("/" + splituri.slice(2).join('/'), content.toString()).then(function () {
+                        resolve();
+                        _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri });
+                        return;
+                    });
+                }
+                else if (options.overwrite) {
+                    _this.fileManager.uploadExistingFile("/" + splituri.slice(2).join('/'), content.toString()).then(function () {
+                        resolve();
+                        _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri });
+                        return;
+                    });
+                }
+            });
+        });
     };
     // --- manage files/folders
     Cloud9FileSystemProvider.prototype.rename = function (oldUri, newUri, options) {
-        ;
+        var oldsplituri = oldUri.path.split("/");
+        var newsplituri = newUri.path.split("/");
+        this.eventEmitter.emit("send_ch4_message", ["rename", "/" + newsplituri.slice(2).join('/'), { "from": "/" + oldsplituri.slice(2).join('/') }, { "$": 92 }]);
         this._fireSoon({ type: vscode.FileChangeType.Deleted, uri: oldUri }, { type: vscode.FileChangeType.Created, uri: newUri });
     };
     Cloud9FileSystemProvider.prototype.delete = function (uri) {
-        ;
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { uri: uri, type: vscode.FileChangeType.Deleted });
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var splituri = uri.path.split("/");
+            var environmentId = splituri[1];
+            _this._getEnvConnection(environmentId).then(function () {
+                _this.fileManager.deleteRemoteFile("/" + splituri.slice(2).join('/')).then(function () {
+                    resolve();
+                    _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { uri: uri, type: vscode.FileChangeType.Deleted });
+                    return;
+                });
+            });
+        });
     };
     Cloud9FileSystemProvider.prototype.createDirectory = function (uri) {
-        ;
-        this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri: uri });
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var splituri = uri.path.split("/");
+            _this.eventEmitter.emit("send_ch4_message", ["mkdir", "/" + splituri.slice(2).join('/'), {}, { "$": 93 }]);
+            setTimeout(function () {
+                _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri: uri });
+                resolve();
+            }, 200);
+        });
     };
     Cloud9FileSystemProvider.prototype.watch = function (resource, opts) {
         // ignore, fires for all changes...
