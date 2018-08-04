@@ -82,7 +82,7 @@ var FileManager = /** @class */ (function () {
                 filename += "/";
             }
             request.get({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/.c9/metadata/environment/' + filename,
+                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
                 jar: _this.cookieJar,
                 headers: {
                     'Content-Type': 'application/json',

@@ -35,7 +35,7 @@ export class UserProvider implements vscode.TreeDataProvider<User> {
 
 	private users: User[]
 
-	constructor(private workspaceRoot: string) {
+	constructor() {
 		this.users = [
 			/*new User("You", "online", vscode.TreeItemCollapsibleState.None, {
 				command: 'cloud9sync.openPackageOnNpm',
@@ -74,10 +74,6 @@ export class UserProvider implements vscode.TreeDataProvider<User> {
 	}
 
 	getChildren(element?: User): Thenable<User[]> {
-		if (!this.workspaceRoot) {
-			return Promise.resolve([]);
-		}
-
 		return new Promise(resolve => {
 			resolve(this.users);
 		});
@@ -160,7 +156,7 @@ export class EnvironmentProvider implements vscode.TreeDataProvider<Environment>
 
 	private envs: Environment[]
 
-	constructor(private workspaceRoot: string) {
+	constructor() {
 		this.envs = [
 			/*new Environment("MyEnv", vscode.TreeItemCollapsibleState.None, {
 				command: 'cloud9sync.openPackageOnNpm',
@@ -199,10 +195,6 @@ export class EnvironmentProvider implements vscode.TreeDataProvider<Environment>
 	}
 
 	getChildren(element?: Environment): Thenable<Environment[]> {
-		if (!this.workspaceRoot) {
-			return Promise.resolve([]);
-		}
-
 		return new Promise(resolve => {
 			resolve(this.envs);
 		});
@@ -237,7 +229,7 @@ export class ChatProvider implements vscode.TreeDataProvider<Chat> {
 
 	private chatitems: Chat[]
 
-	constructor(private workspaceRoot: string) {
+	constructor() {
 		this.chatitems = [];
 	}
 
@@ -261,10 +253,6 @@ export class ChatProvider implements vscode.TreeDataProvider<Chat> {
 	}
 
 	getChildren(element?: Chat): Thenable<Chat[]> {
-		if (!this.workspaceRoot) {
-			return Promise.resolve([]);
-		}
-
 		return new Promise(resolve => {
 			resolve(this.chatitems);
 		});

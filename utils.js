@@ -38,9 +38,9 @@ function GetShortFilePath(document) {
 }
 exports.GetShortFilePath = GetShortFilePath;
 function EnsureLeadingSlash(str) {
-    if (str[0] != '/' || str[0] != '\\')
-        return "/" + str;
-    return str;
+    if (str[0] == '/' || str[0] == '\\')
+        return str;
+    return "/" + str;
 }
 exports.EnsureLeadingSlash = EnsureLeadingSlash;
 function GetRegion() {

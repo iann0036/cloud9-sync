@@ -40,8 +40,7 @@ var User = /** @class */ (function (_super) {
 }(vscode.TreeItem));
 exports.User = User;
 var UserProvider = /** @class */ (function () {
-    function UserProvider(workspaceRoot) {
-        this.workspaceRoot = workspaceRoot;
+    function UserProvider() {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.users = [
@@ -77,9 +76,6 @@ var UserProvider = /** @class */ (function () {
     };
     UserProvider.prototype.getChildren = function (element) {
         var _this = this;
-        if (!this.workspaceRoot) {
-            return Promise.resolve([]);
-        }
         return new Promise(function (resolve) {
             resolve(_this.users);
         });
@@ -151,8 +147,7 @@ var Environment = /** @class */ (function (_super) {
     return Environment;
 }(vscode.TreeItem));
 var EnvironmentProvider = /** @class */ (function () {
-    function EnvironmentProvider(workspaceRoot) {
-        this.workspaceRoot = workspaceRoot;
+    function EnvironmentProvider() {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.envs = [
@@ -187,9 +182,6 @@ var EnvironmentProvider = /** @class */ (function () {
     };
     EnvironmentProvider.prototype.getChildren = function (element) {
         var _this = this;
-        if (!this.workspaceRoot) {
-            return Promise.resolve([]);
-        }
         return new Promise(function (resolve) {
             resolve(_this.envs);
         });
@@ -221,8 +213,7 @@ var Chat = /** @class */ (function (_super) {
     return Chat;
 }(vscode.TreeItem));
 var ChatProvider = /** @class */ (function () {
-    function ChatProvider(workspaceRoot) {
-        this.workspaceRoot = workspaceRoot;
+    function ChatProvider() {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.chatitems = [];
@@ -244,9 +235,6 @@ var ChatProvider = /** @class */ (function () {
     };
     ChatProvider.prototype.getChildren = function (element) {
         var _this = this;
-        if (!this.workspaceRoot) {
-            return Promise.resolve([]);
-        }
         return new Promise(function (resolve) {
             resolve(_this.chatitems);
         });

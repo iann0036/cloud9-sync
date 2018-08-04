@@ -91,7 +91,7 @@ export class FileManager {
             }
 
             request.get({
-                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/.c9/metadata/environment/' + filename,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
                 jar: this.cookieJar,
                 headers: {
                     'Content-Type': 'application/json',

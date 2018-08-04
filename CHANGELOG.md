@@ -1,6 +1,7 @@
 # Change Log
 
-## [0.8.2]
+## [0.9.0]
+- Added experimental file system provider
 - Environment member status updates are now reflected
 
 ## [0.8.1]

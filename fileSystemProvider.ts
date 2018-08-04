@@ -66,6 +66,7 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
             if (id in this.environmentConnections) {
                 if (this.environmentConnections[id].status == "connected") {
                     resolve(id);
+                    return;
                 }
             } else {
                 this.environmentConnections[id] = {
@@ -76,7 +77,7 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
                 });
             }
 
-            this.eventEmitter.on('websocket_init_complete', () => {
+            this.eventEmitter.once('websocket_init_complete', () => {
                 console.warn("WEBSOCK COMPLETE FS PROVIDER");
                 this.environmentConnections[id] = {
                     'status': 'connected'
@@ -114,27 +115,9 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
                     reject(err);
                 });
             });
-        }); // TEMP
-
-        console.warn("stat");
-        console.log(uri);
-
-        return new Promise((resolve, reject) => {
-            this.fileManager.stat("").then(ret => {
-                console.warn("RET:");
-                console.log(ret);
-                if (uri.path == "/") {
-                    console.log("Resolving");
-                    resolve(this.root);
-                } else if (uri.path == "/something.txt") {
-                    console.log("Resolving single");
-                    resolve(new File("something.txt"));
-                } else {
-                    console.log("Throwing FNF");
-                    reject(vscode.FileSystemError.FileNotFound());
-                }
-            });
         });
+
+        //reject(vscode.FileSystemError.FileNotFound());
     }
 
     readDirectory(uri: vscode.Uri): Thenable<[string, vscode.FileType][]> {

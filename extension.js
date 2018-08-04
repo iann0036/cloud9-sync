@@ -39,9 +39,9 @@ function activate(context) {
     eventEmitter = new events.EventEmitter();
     setEventEmitterEvents();
 
-    userProvider = new ViewProviders.UserProvider(vscode.workspace.rootPath);
-    environmentProvider = new ViewProviders.EnvironmentProvider(vscode.workspace.rootPath);
-    chatProvider = new ViewProviders.ChatProvider(vscode.workspace.rootPath);
+    userProvider = new ViewProviders.UserProvider();
+    environmentProvider = new ViewProviders.EnvironmentProvider();
+    chatProvider = new ViewProviders.ChatProvider();
     if (typeof vscode.window.createTerminalRenderer === "function" && parseInt(versionparts[0]) >= 1 && parseInt(versionparts[1]) >= 26) {
         terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
     } else {
@@ -90,6 +90,8 @@ function activate(context) {
     
     const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager, eventEmitter);
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider('cloud9', cloud9fs, { isCaseSensitive: true }));
+
+    //vscode.commands.executeCommand("workbench.action.reloadWindow");
 
     refreshEnvironmentsInSidebar();
 }
@@ -179,6 +181,7 @@ function commandSendchat() {
 
 function commandAddenvtoworkspace(ctx) {
     vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('cloud9:/' + ctx.id + '/'), name: ctx.name + " - Cloud9" });
+    vscode.commands.executeCommand("workbench.action.reloadWindow");
 }
 
 function commandInitterminal() {
@@ -380,9 +383,6 @@ function setEventEmitterEvents() {
         refreshEnvironmentsInSidebar().then(() => {
             commandConnect(environment);
         });
-        /*setTimeout(() => {
-            
-        }, 5000);*/
     });
 
     eventEmitter.on('disconnect', () => {
@@ -517,7 +517,6 @@ function setEventEmitterEvents() {
             let document = null;
 
             vscode.workspace.textDocuments.forEach(doc => {
-                console.log(Utils.GetShortFilePath(doc) + " != " + "/" + event_data["docId"]);
                 if (Utils.GetShortFilePath(doc) == "/" + event_data["docId"]) {
                     document = doc;
                 }
@@ -774,6 +773,7 @@ function refreshEnvironmentsInSidebar() {
         awsregion = extensionConfig.get('region');
 
         if (!extensionConfig.get('accessKey') || !extensionConfig.get('secretKey')) {
+            console.log("Keys not set");
             resolve();
             return;
         }
@@ -800,6 +800,8 @@ function refreshEnvironmentsInSidebar() {
             body: awsreq.body,
             rejectUnauthorized: false
         }, function(err, httpResponse, env_token) {
+            console.log(err);
+            console.log(httpResponse);
             if (err != null || !httpResponse.statusCode.toString().startsWith("2")) {
                 vscode.window.setStatusBarMessage("Unable to connect to list environments", 5000);
                 resolve();
@@ -829,6 +831,8 @@ function refreshEnvironmentsInSidebar() {
                 headers: awsreq.headers,
                 body: awsreq.body
             }, function(err, httpResponse, env_token) {
+                console.log(err);
+                console.log(httpResponse);
                 let response = JSON.parse(httpResponse['body']);
                 if ('environments' in response) {
                     environmentProvider.clearAll(); // TODO: Make this do a merge instead of replace
@@ -1238,6 +1242,7 @@ function createWatchers() {
 
     vscode.workspace.onDidChangeTextDocument(function(evt) {
         evt.contentChanges.forEach(change => {
+            // TODO: Check if path is relevant
             editManager.processTextDocumentChange(change, evt);
         });
     });

@@ -44,9 +44,9 @@ export function GetShortFilePath(document: vscode.TextDocument): string {
 }
 
 export function EnsureLeadingSlash(str): string {
-    if (str[0] != '/' || str[0] != '\\')
-        return "/" + str;
-    return str;
+    if (str[0] == '/' || str[0] == '\\')
+        return str;
+    return "/" + str;
 }
 
 export function GetRegion(): string {

@@ -44,6 +44,7 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
             if (id in _this.environmentConnections) {
                 if (_this.environmentConnections[id].status == "connected") {
                     resolve(id);
+                    return;
                 }
             }
             else {
@@ -54,7 +55,7 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
                     id: id
                 });
             }
-            _this.eventEmitter.on('websocket_init_complete', function () {
+            _this.eventEmitter.once('websocket_init_complete', function () {
                 console.warn("WEBSOCK COMPLETE FS PROVIDER");
                 _this.environmentConnections[id] = {
                     'status': 'connected'
@@ -88,27 +89,8 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
                     reject(err);
                 });
             });
-        }); // TEMP
-        console.warn("stat");
-        console.log(uri);
-        return new Promise(function (resolve, reject) {
-            _this.fileManager.stat("").then(function (ret) {
-                console.warn("RET:");
-                console.log(ret);
-                if (uri.path == "/") {
-                    console.log("Resolving");
-                    resolve(_this.root);
-                }
-                else if (uri.path == "/something.txt") {
-                    console.log("Resolving single");
-                    resolve(new File("something.txt"));
-                }
-                else {
-                    console.log("Throwing FNF");
-                    reject(vscode.FileSystemError.FileNotFound());
-                }
-            });
         });
+        //reject(vscode.FileSystemError.FileNotFound());
     };
     Cloud9FileSystemProvider.prototype.readDirectory = function (uri) {
         var _this = this;
