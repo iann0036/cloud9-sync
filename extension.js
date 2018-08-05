@@ -27,7 +27,7 @@ let join_doc_chunks = [], statusBarItem;
 let userProvider, environmentProvider, environmentView, userManager;
 let terminalManager, eventEmitter, websocketProvider, fileManager, editManager;
 
-let p, connectionPromise;
+let p, connectionPromise, watcherEventListeners = [];
 
 let cloud9fs;
 
@@ -532,7 +532,14 @@ function setEventEmitterEvents() {
     });
 
     eventEmitter.on('CLEAR_CHAT', (event_data) => {
-        chatProvider.clearAll();
+        if ('clear' in event_data) {
+            chatProvider.clearAll();
+        } else if ('id' in event_data) {
+            chatProvider.removeChatItem(event_data['id']);
+        } else {
+            console.warn("Unknown CLEAR_CHAT data");
+            console.log(event_data);
+        } 
     });
     
     eventEmitter.on('JOIN_DOC', (event_data) => {
@@ -1215,6 +1222,11 @@ function process_cursor_update(event) {
 }
 
 function createWatchers() {
+    watcherEventListeners.forEach(watcherEventListener => {
+        watcherEventListener.dispose();
+    });
+    watcherEventListeners = [];
+
     watcher = vscode.workspace.createFileSystemWatcher("**");
     watcher.ignoreChangeEvents = false;
     watcher.ignoreCreateEvents = false;
@@ -1234,7 +1246,9 @@ function createWatchers() {
         //deleteRemoteFile(event.fsPath);
     });
 
-    vscode.window.onDidChangeVisibleTextEditors(function(evt) {
+    watcherEventListeners.push(watcher);
+
+    watcherEventListeners.push(vscode.window.onDidChangeVisibleTextEditors(function(evt) {
         let newVisibleDocuments = [];
         evt.forEach(visibleEditors => {
             console.log("new visible document: " + Utils.GetShortFilePath(visibleEditors.document));
@@ -1268,14 +1282,14 @@ function createWatchers() {
         });
 
         visibleDocuments = newVisibleDocuments;
-    });
+    }));
 
-    vscode.workspace.onDidChangeTextDocument(function(evt) {
+    watcherEventListeners.push(vscode.workspace.onDidChangeTextDocument(function(evt) {
         evt.contentChanges.forEach(change => {
             // TODO: Check if path is relevant
             editManager.processTextDocumentChange(change, evt);
         });
-    });
+    }));
 
     console.log("Watchers started...");
 }

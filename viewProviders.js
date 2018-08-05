@@ -223,6 +223,14 @@ var ChatProvider = /** @class */ (function () {
         this.chatitems.push(chat);
         this.refresh();
     };
+    ChatProvider.prototype.removeChatItem = function (mid) {
+        for (var i = 0; i < this.chatitems.length; i++) {
+            if (this.chatitems[i].mid == mid) {
+                this.chatitems.splice(i, 1);
+            }
+        }
+        this.refresh();
+    };
     ChatProvider.prototype.clearAll = function () {
         this.chatitems = [];
         this.refresh();

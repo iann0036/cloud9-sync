@@ -239,6 +239,15 @@ export class ChatProvider implements vscode.TreeDataProvider<Chat> {
 		this.refresh();
 	}
 
+	removeChatItem(mid: number): void {
+		for (let i=0; i<this.chatitems.length; i++) {
+			if (this.chatitems[i].mid == mid) {
+				this.chatitems.splice(i, 1);
+			}
+		}
+		this.refresh();
+	}
+
 	clearAll(): void {
 		this.chatitems = [];
 		this.refresh();

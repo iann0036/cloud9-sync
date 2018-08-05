@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.9.2]
+- Fix multiple event listener on reconnect
+- Fix single chat message clear
+
 ## [0.9.1]
 - Completed experimental file system provider
 - Fixed sync to local file system when provider is active
