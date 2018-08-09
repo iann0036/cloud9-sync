@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as WebSocket from 'ws';
 import * as Utils from './utils';
 import { EventEmitter } from 'events';
+import * as HttpsProxyAgent from 'https-proxy-agent';
+import * as Url from 'url';
 
 export class WebsocketProvider {
     private sessionState;
@@ -46,10 +48,20 @@ export class WebsocketProvider {
     
         try {
             console.log('wss://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId + '/'+vfsid+'/socket/?authorization='+xauth+'&EIO=3&transport=websocket&sid='+sid);
+
+            let proxy = Utils.GetProxy();
+            let agent;
+            if (proxy) {
+                agent = new HttpsProxyAgent(Url.parse(proxy));
+            } else {
+                agent = null;
+            }
+
             this.ws = new WebSocket(
                 'wss://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId + '/'+vfsid+'/socket/?authorization='+xauth+'&EIO=3&transport=websocket&sid='+sid,
                 [],
                 {
+                    'agent': agent,
                     'headers': {
                         'Cookie': cookiestr
                     },

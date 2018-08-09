@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var vscode = require("vscode");
 var WebSocket = require("ws");
 var Utils = require("./utils");
+var HttpsProxyAgent = require("https-proxy-agent");
+var Url = require("url");
 var WebsocketProvider = /** @class */ (function () {
     function WebsocketProvider(eventEmitter) {
         this.eventEmitter = eventEmitter;
@@ -28,7 +30,16 @@ var WebsocketProvider = /** @class */ (function () {
         var cookiestr = cookieJar.getCookieString('https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId);
         try {
             console.log('wss://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=websocket&sid=' + sid);
+            var proxy = Utils.GetProxy();
+            var agent = void 0;
+            if (proxy) {
+                agent = new HttpsProxyAgent(Url.parse(proxy));
+            }
+            else {
+                agent = null;
+            }
             this.ws = new WebSocket('wss://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=websocket&sid=' + sid, [], {
+                'agent': agent,
                 'headers': {
                     'Cookie': cookiestr
                 },

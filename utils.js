@@ -48,6 +48,14 @@ function GetRegion() {
     return extensionConfig.get('region');
 }
 exports.GetRegion = GetRegion;
+function GetProxy() {
+    var extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+    var proxy = extensionConfig.get('proxy');
+    if (proxy == "")
+        return null;
+    return proxy;
+}
+exports.GetProxy = GetProxy;
 function ReducePromises(array, fn) {
     var results = [];
     return array.reduce(function (p, item) {

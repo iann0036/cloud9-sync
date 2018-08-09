@@ -36,7 +36,8 @@ var FileManager = /** @class */ (function () {
                     'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
                 Utils.ReducePromises(JSON.parse(body), function (inode) {
                     if (startPath + "/" + inode['name'] == "/.c9" || startPath + "/" + inode['name'] == "/.vscode") {
@@ -107,7 +108,8 @@ var FileManager = /** @class */ (function () {
                     'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
                 console.warn("LISTDIR RESPONSE");
                 console.log(httpResponse);
@@ -128,7 +130,8 @@ var FileManager = /** @class */ (function () {
                     'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
                 if (inodePath != null) {
                     console.log("Downloading the file " + inodePath);
@@ -151,7 +154,8 @@ var FileManager = /** @class */ (function () {
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
                 },
-                body: content
+                body: content,
+                proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
                 console.log(httpResponse);
                 console.log(body);
@@ -171,7 +175,8 @@ var FileManager = /** @class */ (function () {
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
                 },
-                body: content
+                body: content,
+                proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
                 var _this = this;
                 console.log(httpResponse);
@@ -204,7 +209,8 @@ var FileManager = /** @class */ (function () {
                     'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
                 console.log(err);
                 console.log(httpResponse);
@@ -232,7 +238,8 @@ var FileManager = /** @class */ (function () {
                     'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
                     'x-authorization': _this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
                 console.log("REMOTE STAT FOR UPLOAD");
                 console.log(err);

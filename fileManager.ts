@@ -44,7 +44,8 @@ export class FileManager {
                     'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, (err, httpResponse, body) => {
                 Utils.ReducePromises(JSON.parse(body), (inode) => {
                     if (startPath + "/" + inode['name'] == "/.c9" || startPath + "/" + inode['name'] == "/.vscode") {
@@ -119,7 +120,8 @@ export class FileManager {
                     'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, body) {
                 console.warn("LISTDIR RESPONSE");
                 console.log(httpResponse);
@@ -140,7 +142,8 @@ export class FileManager {
                     'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, body) {
                 if (inodePath != null) {
                     console.log("Downloading the file " + inodePath);
@@ -163,7 +166,8 @@ export class FileManager {
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
                 },
-                body: content
+                body: content,
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, body) {
                 console.log(httpResponse);
                 console.log(body);
@@ -184,7 +188,8 @@ export class FileManager {
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
                 },
-                body: content
+                body: content,
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, body) {
                 console.log(httpResponse);
                 console.log(body);
@@ -217,7 +222,8 @@ export class FileManager {
                     'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, body) {
                 console.log(err);
                 console.log(httpResponse);
@@ -248,7 +254,8 @@ export class FileManager {
                     'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
                     'x-authorization': this.xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, (err, httpResponse, body) => {
                 console.log("REMOTE STAT FOR UPLOAD");
                 console.log(err);

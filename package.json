@@ -243,6 +243,11 @@
           ],
           "default": "prompt",
           "description": "How to synchronize a connected environment."
+        },
+        "cloud9sync.proxy": {
+          "type": "string",
+          "default": "",
+          "description": "HTTP proxy used to connect to environments."
         }
       }
     }
@@ -266,10 +271,12 @@
     "color-string": "^1.5.2",
     "cookie": "^0.3.1",
     "events": "^3.0.0",
+    "https-proxy-agent": "^2.2.1",
     "net": "^1.0.2",
     "request": "^2.87.0",
     "request-cookies": "^1.1.0",
     "text-encoding": "^0.6.4",
+    "url": "^0.11.0",
     "ws": "^5.2.0"
   }
 }

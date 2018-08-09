@@ -72,6 +72,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.syncupfsitem', commandSyncupfsitem));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvironment', commandAddenvironment));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvtoworkspace', commandAddenvtoworkspace));
+    //context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.showfilerevisions', commandShowfilerevisions));
 
     /*
     TODO: implement this for ReadOnly users
@@ -108,6 +109,16 @@ function deactivate() {
     console.log('"cloud9-sync" has been deactivated')
 }
 exports.deactivate = deactivate;
+
+function commandShowfilerevisions(ctx) {
+    vscode.commands.executeCommand('vscode.setEditorLayout', {
+        "orientation": 1,
+        "groups": [{ "size": 0.8 }, { "size": 0.2 }]
+    }).then(() => {
+        let panel = vscode.window.createWebviewPanel('c9FileRevisions', 'File Revisions', vscode.ViewColumn.Two, {});
+        panel.webview.html = '';
+    }, vscode.window.showErrorMessage);
+}
 
 function commandSyncupfsitem(ctx) {
     fs.stat(ctx.fsPath, (err, fstat) => {
@@ -159,7 +170,8 @@ function commandAddenvironment() {
             request.post({
                 url: "https://" + awsreq.hostname + awsreq.path,
                 headers: awsreq.headers,
-                body: awsreq.body
+                body: awsreq.body,
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, env_token) {
                 let response = JSON.parse(httpResponse['body']);
 
@@ -276,7 +288,8 @@ function commandConnect(ctx) {
                     request.post({
                         url: "https://" + awsreq.hostname + awsreq.path,
                         headers: awsreq.headers,
-                        body: awsreq.body
+                        body: awsreq.body,
+                        proxy: Utils.GetProxy()
                     }, function(err, httpResponse, env_token) {
                         if (connectedEnvironment.state == "NOT_CONNECTED") {
                             commandDisconnect();
@@ -380,6 +393,8 @@ function commandSetup() {
         });
     });
 }
+
+/////
 
 function setEventEmitterEvents() {
     eventEmitter.on('send_ch4_message', (data) => {
@@ -802,8 +817,6 @@ function setEventEmitterEvents() {
     });
 }
 
-/////
-
 function refreshEnvironmentsInSidebar() {
     return new Promise((resolve, reject) => {
         extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
@@ -835,7 +848,8 @@ function refreshEnvironmentsInSidebar() {
             url: "https://" + awsreq.hostname + awsreq.path,
             headers: awsreq.headers,
             body: awsreq.body,
-            rejectUnauthorized: false
+            rejectUnauthorized: false,
+            proxy: Utils.GetProxy()
         }, function(err, httpResponse, env_token) {
             console.log(err);
             console.log(httpResponse);
@@ -866,7 +880,8 @@ function refreshEnvironmentsInSidebar() {
             request.post({
                 url: "https://" + awsreq.hostname + awsreq.path,
                 headers: awsreq.headers,
-                body: awsreq.body
+                body: awsreq.body,
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, env_token) {
                 console.log(err);
                 console.log(httpResponse);
@@ -907,7 +922,8 @@ function checkEnvironmentStatus(environmentId) {
         request.post({
             url: "https://" + awsreq.hostname + awsreq.path,
             headers: awsreq.headers,
-            body: awsreq.body
+            body: awsreq.body,
+            proxy: Utils.GetProxy()
         }, function(err, httpResponse, env_token) {
             let response = JSON.parse(httpResponse['body']);
 
@@ -944,7 +960,8 @@ function refreshConnection(environmentId) {
     request.post({
         url: "https://" + awsreq.hostname + awsreq.path,
         headers: awsreq.headers,
-        body: awsreq.body
+        body: awsreq.body,
+        proxy: Utils.GetProxy()
     }, function(err, httpResponse, env_token) {
         let env_token_json = JSON.parse(env_token);
         if ('Message' in env_token_json && !('authenticationTag' in env_token_json)) {
@@ -963,7 +980,8 @@ function refreshConnection(environmentId) {
                 'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                 'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId
             },
-            body: '{"version":13,"token":' + env_token + '}'
+            body: '{"version":13,"token":' + env_token + '}',
+            proxy: Utils.GetProxy()
         }, function(err, httpResponse, body) {
             console.log("Completed connection refresh");
         });
@@ -1005,7 +1023,8 @@ function doConnect(environmentId) {
     request.post({
         url: "https://" + awsreq.hostname + awsreq.path,
         headers: awsreq.headers,
-        body: awsreq.body
+        body: awsreq.body,
+        proxy: Utils.GetProxy()
     }, function(err, httpResponse, env_token) {
         let env_token_json = JSON.parse(env_token);
         if ('Message' in env_token_json && !('authenticationTag' in env_token_json)) {
@@ -1024,7 +1043,8 @@ function doConnect(environmentId) {
                 'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                 'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId
             },
-            body: '{"version":13,"token":' + env_token + '}'
+            body: '{"version":13,"token":' + env_token + '}',
+            proxy: Utils.GetProxy()
         }, function(err, httpResponse, body) {
             console.log("Verifying gateway...");
             console.log(err);
@@ -1046,7 +1066,8 @@ function doConnect(environmentId) {
                     'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                     'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                     'x-authorization': xauth
-                }
+                },
+                proxy: Utils.GetProxy()
             }, function(err, httpResponse, body) {
                 // TODO: Generate t
                 request.get({
@@ -1058,7 +1079,8 @@ function doConnect(environmentId) {
                         'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                         'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                         'x-authorization': xauth
-                    }
+                    },
+                    proxy: Utils.GetProxy()
                 }, function(err, httpResponse, body) {
                     let buf = Buffer.from(body).slice(7);
                     let bufasjson = JSON.parse(buf.toString());
@@ -1074,7 +1096,8 @@ function doConnect(environmentId) {
                             'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                             'x-authorization': xauth
                         },
-                        body: '46:4{"type":"handshake","seq":20000,"version":13}'
+                        body: '46:4{"type":"handshake","seq":20000,"version":13}',
+                        proxy: Utils.GetProxy()
                     }, function(err, httpResponse, body) {
                         console.log("46 POST returned");
                         request.get({
@@ -1086,7 +1109,8 @@ function doConnect(environmentId) {
                                 'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                                 'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                                 'x-authorization': xauth
-                            }
+                            },
+                            proxy: Utils.GetProxy()
                         }, function(err, httpResponse, body) {
                             console.log("46 GET Return:");
                             console.log(body);
@@ -1103,7 +1127,8 @@ function doConnect(environmentId) {
                                     'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                                     'x-authorization': xauth
                                 },
-                                body: '14:4{"ack":10000}'
+                                body: '14:4{"ack":10000}',
+                                proxy: Utils.GetProxy()
                             }, function(err, httpResponse, body) {
                                 console.log("14:4 POST returned");
                                 console.log(body);
@@ -1116,7 +1141,8 @@ function doConnect(environmentId) {
                                         'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                                         'x-authorization': xauth
                                     },
-                                    body: '48:4{"ack":10000,"seq":20001,"d":["ready",{"$":1}]}'
+                                    body: '48:4{"ack":10000,"seq":20001,"d":["ready",{"$":1}]}',
+                                    proxy: Utils.GetProxy()
                                 }, function(err, httpResponse, body) {
                                     console.log("48:4 POST returned");
                                     console.log(body);

@@ -1,6 +1,7 @@
 # Change Log
 
 ## [0.9.2]
+- Added proxy support
 - Fix multiple event listener on reconnect
 - Fix single chat message clear
 
