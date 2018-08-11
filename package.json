@@ -129,13 +129,8 @@
         }
       },
       {
-        "command": "cloud9sync.syncupfsitem",
-        "title": "Upload to Cloud9",
-        "category": "Cloud9 Sync"
-      },
-      {
         "command": "cloud9sync.addenvtoworkspace",
-        "title": "Add to Workspace (Experimental)",
+        "title": "Add to Workspace",
         "category": "Cloud9 Sync"
       },
       {

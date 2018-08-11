@@ -69,7 +69,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.initterminal', commandInitterminal));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.initsharedterminal', commandInitsharedterminal));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.sendchat', commandSendchat));
-    context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.syncupfsitem', commandSyncupfsitem));
+    //context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.syncupfsitem', commandSyncupfsitem));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvironment', commandAddenvironment));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvtoworkspace', commandAddenvtoworkspace));
     //context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.showfilerevisions', commandShowfilerevisions));
