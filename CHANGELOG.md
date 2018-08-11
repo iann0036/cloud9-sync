@@ -2,6 +2,7 @@
 
 ## [0.9.3]
 - Fixed edit bug for reopened documents
+- Updated README with settings explanation
 
 ## [0.9.2]
 - Added proxy support

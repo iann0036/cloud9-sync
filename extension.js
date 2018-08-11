@@ -92,7 +92,7 @@ function activate(context) {
     const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager, eventEmitter);
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider('cloud9', cloud9fs, { isCaseSensitive: true }));
 
-    refreshEnvironmentsInSidebar().then(() => {
+    refreshEnvironmentsInSidebar().then(envs => {
         if (vscode.workspace.workspaceFolders) {
             vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
                 if (workspaceFolder.uri.scheme == "cloud9") {
@@ -101,6 +101,8 @@ function activate(context) {
                 }
             });
         }
+
+        // TODO: Check for auto-connect here
     });
 }
 exports.activate = activate;
@@ -824,7 +826,7 @@ function refreshEnvironmentsInSidebar() {
 
         if (!extensionConfig.get('accessKey') || !extensionConfig.get('secretKey')) {
             console.log("Keys not set");
-            resolve();
+            resolve([]);
             return;
         }
 
@@ -855,7 +857,7 @@ function refreshEnvironmentsInSidebar() {
             console.log(httpResponse);
             if (err != null || !httpResponse.statusCode.toString().startsWith("2")) {
                 vscode.window.setStatusBarMessage("Unable to connect to list environments", 5000);
-                resolve();
+                resolve([]);
                 return;
             }
 
@@ -891,7 +893,7 @@ function refreshEnvironmentsInSidebar() {
                     response['environments'].forEach(env => {
                         environmentProvider.addEnvironment(env);
                     });
-                    resolve();
+                    resolve(response['environments']);
                 }
             });
         });
