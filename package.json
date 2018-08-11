@@ -47,12 +47,6 @@
   "main": "./extension",
   "contributes": {
     "menus": {
-      "explorer/context": [
-        {
-          "command": "cloud9sync.syncupfsitem",
-          "group": "1_custom_cloud9"
-        }
-      ],
       "view/title": [
         {
           "command": "cloud9sync.refreshenvironments",
