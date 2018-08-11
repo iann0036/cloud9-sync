@@ -589,12 +589,12 @@ function setEventEmitterEvents() {
                 join_doc_response['contents']
             )
             editManager.addRemoteEdit(edit);
-            vscode.workspace.applyEdit(edit);
-            
-            editManager.lastKnownRemoteDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
-            editManager.lastKnownLocalDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
-            console.log("Initialized lastKnownTexts for doc: " + Utils.ShortenFilePath(inodePath));
-            editManager.revNum = join_doc_response['revNum'];
+            vscode.workspace.applyEdit(edit).then(() => {
+                editManager.lastKnownRemoteDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
+                editManager.lastKnownLocalDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
+                console.log("Initialized lastKnownTexts for doc: " + Utils.ShortenFilePath(inodePath));
+                editManager.revNum = join_doc_response['revNum'];
+            });
 
             // Set Selections
 

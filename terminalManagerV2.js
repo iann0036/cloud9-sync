@@ -20,6 +20,10 @@ var TerminalManager = /** @class */ (function () {
             _this.lastCreatedTerminal.terminal.show();
             _this.eventEmitter.emit('send_ch4_message', ["resize", pty["pid"], 159, 33]);
             _this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "capturePane": { "start": -32768, "end": 1000, "pane": "cloud9_terminal_" + _this.lastTid + ":0.0" }, "encoding": "utf8", "name": "xterm-color", "command": "" }, { "$": pty["id"] }]);
+            if (!_this.lastTerminalIsShared) {
+                _this.eventEmitter.emit('send_ch4_message', // detach other clients if not shared
+                ["write", pty["id"], ":detach -a\n"]);
+            }
         });
         eventEmitter.on('ch4_data', function (data, environmentId) {
             if (Array.isArray(data)) {

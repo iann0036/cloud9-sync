@@ -9,7 +9,7 @@ export class UserManager {
         this.ignoredclients = [];
     }
 
-    setPosition(clientId, fileName, document, range, isReversed) {
+    setPosition(clientId, fileName, document, range, isReversed): void {
         const documentUri = document.uri.toString();
         const startOffset = document.offsetAt(range.start);
         const endOffset = document.offsetAt(range.end);

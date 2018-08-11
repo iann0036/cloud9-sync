@@ -6,7 +6,7 @@
     "name": "Ian Mckay",
     "email": "cloud9sync@ianmckay.com.au"
   },
-  "version": "0.9.2",
+  "version": "0.9.3",
   "publisher": "iann0036",
   "icon": "resources/logo_128.png",
   "engines": {
@@ -22,6 +22,7 @@
     "Ian Mckay <cloud9sync@ianmckay.com.au>"
   ],
   "activationEvents": [
+    "onFileSystemAccess:cloud9",
     "*"
   ],
   "repository": {

@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.9.3]
+- Fixed edit bug for reopened documents
+
 ## [0.9.2]
 - Added proxy support
 - Fix multiple event listener on reconnect

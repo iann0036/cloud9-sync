@@ -33,6 +33,11 @@ export class TerminalManager {
             this.eventEmitter.emit('send_ch4_message',
                 ["tmux","",{"capturePane":{"start":-32768,"end":1000,"pane":"cloud9_terminal_" + this.lastTid + ":0.0"},"encoding":"utf8","name":"xterm-color","command":""},{"$":pty["id"]}]
             );
+            if (!this.lastTerminalIsShared) {
+                this.eventEmitter.emit('send_ch4_message', // detach other clients if not shared
+                    ["write", pty["id"], ":detach -a\n"]
+                );
+            }
         });
 
         eventEmitter.on('ch4_data', (data, environmentId) => {

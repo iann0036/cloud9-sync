@@ -142,6 +142,7 @@ export class EditManager {
     public vfsid;
     public recent_edits;
     private recent_edits_iterator;
+    private doc_path;
 
     constructor(
         private eventEmitter,
@@ -171,13 +172,17 @@ export class EditManager {
     
         console.log("SENDING PENDING EDITS");
     
-        setTimeout((pending_edit_l, prev_text) => {
+        setTimeout(() => {
+            let prev_text = this.lastKnownRemoteDocumentText[this.doc_path];
+            let edit = this.pending_edit.getEditList(prev_text);
+            this.pending_edit.empty();
+            
             this.revNum += 1;
             let doc = vscode.window.activeTextEditor.document; // TODO: Not compensating for multi-doc
             let selection = vscode.window.activeTextEditor.selection;
-            let edit = pending_edit_l.getEditList(prev_text);
+            
             let seq = this.websocketProvider.send_ch4_message(
-                ["call","collab","send",[this.vfsid,{"type":"EDIT_UPDATE","data":{"docId":Utils.GetShortFilePath(doc),"op":edit,"revNum":this.revNum,"selection":[
+                ["call","collab","send",[this.vfsid,{"type":"EDIT_UPDATE","data":{"docId":this.doc_path,"op":edit,"revNum":this.revNum,"selection":[
                     selection.start.line,
                     selection.start.character,
                     selection.end.line,
@@ -187,13 +192,17 @@ export class EditManager {
             );
             this.last_unacknowledged_edit = seq;
 
-            pending_edit_l.empty();
-
-            this.lastKnownRemoteDocumentText[Utils.GetShortFilePath(doc)] = this.lastKnownLocalDocumentText[Utils.GetShortFilePath(doc)];
-        }, 1, this.pending_edit, this.lastKnownRemoteDocumentText[Utils.GetShortFilePath(vscode.window.activeTextEditor.document)]); // TODO: Fix bad selection hack
+            this.lastKnownRemoteDocumentText[this.doc_path] = this.lastKnownLocalDocumentText[this.doc_path];
+        }, 1); // TODO: Fix bad selection hack
     }
 
     queuePendingEdit(r, d, i) {
+        console.warn("queuePendingEdit:");
+        console.log({
+            'r': r,
+            'd': d,
+            'i': i
+        });
         this.pending_edit.addEdit(parseInt(r), d, i);
     }
 
@@ -223,6 +232,7 @@ export class EditManager {
         console.log("NON REMOTE EDIT");
 
         let path = Utils.GetShortFilePath(evt.document);
+        this.doc_path = path; // TODO: Check for changes to this
 
         let prevText = this.lastKnownLocalDocumentText[path];
         if (prevText === undefined) {
