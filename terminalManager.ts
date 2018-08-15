@@ -158,11 +158,17 @@ export class TerminalManager {
         return null;
     }
 
-    closeTerminal(terminal) {
+    closeTerminal(terminal): void {
         terminal['socket'].destroy();
     }
 
-    emitTerminalData(terminal, data) {
+    closeAll(): void {
+        Object.values(this.terminals).forEach(terminal => {
+            this.closeTerminal(terminal);
+        });
+    }
+
+    emitTerminalData(terminal, data): void {
         if (typeof data == "string") {
             terminal['socket'].write(data);
         }

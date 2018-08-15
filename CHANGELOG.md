@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.9.4]
+- Close all terminals on disconnect
+- Minor fix for cancelled synchronization
+
 ## [0.9.3]
 - Fixed edit bug for reopened documents
 - Updated README with settings explanation

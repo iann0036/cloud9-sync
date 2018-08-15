@@ -119,7 +119,7 @@ export class TerminalManager {
         console.log("init'd remote terminal");
     }
 
-    closeTerminal(terminal) {
+    closeTerminal(terminal): void {
         terminal.terminal.dispose();
 
         if (terminal['shared']) {
@@ -129,7 +129,13 @@ export class TerminalManager {
         }
     }
 
-    emitTerminalData(terminal, data) {
+    closeAll(): void {
+        Object.values(this.terminals).forEach(terminal => {
+            this.closeTerminal(terminal);
+        });
+    }
+
+    emitTerminalData(terminal, data): void {
         if (typeof data == "string") {
             terminal['terminal'].write(data);
 

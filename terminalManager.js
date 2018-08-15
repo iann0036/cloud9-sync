@@ -131,6 +131,12 @@ var TerminalManager = /** @class */ (function () {
     TerminalManager.prototype.closeTerminal = function (terminal) {
         terminal['socket'].destroy();
     };
+    TerminalManager.prototype.closeAll = function () {
+        var _this = this;
+        Object.values(this.terminals).forEach(function (terminal) {
+            _this.closeTerminal(terminal);
+        });
+    };
     TerminalManager.prototype.emitTerminalData = function (terminal, data) {
         if (typeof data == "string") {
             terminal['socket'].write(data);

@@ -101,6 +101,12 @@ var TerminalManager = /** @class */ (function () {
             this.eventEmitter.emit('send_ch4_message', ["call", "collab", "send", [this.vfsid, { "type": "GENERIC_BROADCAST", "data": { "exttype": "terminal_destroy", "tid": terminal['tid'], "sender": this.vfsid } }]]);
         }
     };
+    TerminalManager.prototype.closeAll = function () {
+        var _this = this;
+        Object.values(this.terminals).forEach(function (terminal) {
+            _this.closeTerminal(terminal);
+        });
+    };
     TerminalManager.prototype.emitTerminalData = function (terminal, data) {
         if (typeof data == "string") {
             terminal['terminal'].write(data);

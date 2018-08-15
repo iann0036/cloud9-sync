@@ -34,15 +34,13 @@ let cloud9fs;
 function activate(context) {
     console.log('"cloud9-sync" is active');
 
-    let versionparts = vscode.version.split(".");
-
     eventEmitter = new events.EventEmitter();
     setEventEmitterEvents();
 
     userProvider = new ViewProviders.UserProvider();
     environmentProvider = new ViewProviders.EnvironmentProvider();
     chatProvider = new ViewProviders.ChatProvider();
-    if (typeof vscode.window.createTerminalRenderer === "function" && parseInt(versionparts[0]) >= 1 && parseInt(versionparts[1]) >= 26) {
+    if (typeof vscode.window.createTerminalRenderer === "function") {
         terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
     } else {
         terminalManager = new TerminalManager.TerminalManager(context.extensionPath, eventEmitter);
@@ -414,13 +412,14 @@ function setEventEmitterEvents() {
         if (statusBarItem) {
             statusBarItem.hide();
         }
+        terminalManager.closeAll();
         userProvider.clearAll();
         environmentProvider.disconnectAll();
         chatProvider.clearAll();
         websocketProvider.disconnect();
         clearInterval(connectionRefreshInterval);
 
-        /*
+        /* TODO
         if (vscode.workspace.workspaceFolders) {
             vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
                 if (workspaceFolder.uri.scheme == "cloud9" && workspaceFolder.uri.path.startsWith("/" + connectedEnvironment.id)) {
@@ -511,6 +510,8 @@ function setEventEmitterEvents() {
                     extensionConfig.update("syncStrategy", "bidirectional", vscode.ConfigurationTarget.Workspace);
                     continueSync("bidirectional");
                 }
+            }).catch(() => {
+                continueSync("none");
             });
         } else {
             continueSync(syncStrategy);
