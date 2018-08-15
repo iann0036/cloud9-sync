@@ -240,7 +240,6 @@ function commandConnect(ctx) {
                     connectedEnvironment = env;
                 }
             });
-            console.log(environmentView.selection);
             connectedEnvironment.setConnecting();
             environmentProvider.refresh();
 
