@@ -46,3 +46,6 @@ Setting | Description | Set When
 `cloud9sync.secretKey` | Your AWS secret key for authenticating to the environment | Refreshing for the first time
 `cloud9sync.syncStrategy` | How to synchronize a connected environment | Initially connecting to an environment
 `cloud9sync.proxy` | HTTP proxy used to connect to environments (format: http://1.2.3.4:8888) | None (only manually set)
+`cloud9sync.assumeRole` | The ARN of a role to assume into | None (only manually set)
+`cloud9sync.mfaSerial` | The serial number or ARN of your MFA devices | None (only manually set)
+`cloud9sync.sessionDuration` | The duration (in seconds) of the STS sessions | None (only manually set)

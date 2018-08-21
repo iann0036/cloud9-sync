@@ -1,6 +1,8 @@
 # Change Log
 
 ## [0.9.4]
+- Added ability to authenticate with MFA token
+- Added ability to assume AWS role
 - Close all terminals on disconnect
 - Minor fix for cancelled synchronization
 

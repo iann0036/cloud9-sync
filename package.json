@@ -238,6 +238,21 @@
           "type": "string",
           "default": "",
           "description": "HTTP proxy used to connect to environments."
+        },
+        "cloud9sync.assumeRole": {
+          "type": "string",
+          "default": "",
+          "description": "The ARN of a role to assume into."
+        },
+        "cloud9sync.mfaSerial": {
+          "type": "string",
+          "default": "",
+          "description": "The serial number or ARN of your MFA device."
+        },
+        "cloud9sync.sessionDuration": {
+          "type": "string",
+          "default": "3600",
+          "description": "The duration (in seconds) of the STS session."
         }
       }
     }
@@ -269,6 +284,7 @@
     "tough-cookie": "^2.4.3",
     "url": "^0.11.0",
     "url-parse": "^1.4.3",
-    "ws": "^5.2.0"
+    "ws": "^5.2.0",
+    "xml2js": "^0.4.19"
   }
 }
