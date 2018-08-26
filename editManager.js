@@ -169,12 +169,6 @@ var EditManager = /** @class */ (function () {
         }, 1); // TODO: Fix bad selection hack
     };
     EditManager.prototype.queuePendingEdit = function (r, d, i) {
-        console.warn("queuePendingEdit:");
-        console.log({
-            'r': r,
-            'd': d,
-            'i': i
-        });
         this.pending_edit.addEdit(parseInt(r), d, i);
     };
     EditManager.prototype.addRemoteEdit = function (edit) {
@@ -187,16 +181,20 @@ var EditManager = /** @class */ (function () {
     };
     EditManager.prototype.processTextDocumentChange = function (change, evt) {
         var _this = this;
-        for (var i in this.recent_edits) {
-            var text_edits = this.recent_edits[i];
-            console.log(text_edits);
-            text_edits.forEach(function (textedit) {
-                if (textedit.range.contains(evt.document.positionAt(change.rangeOffset))) {
-                    console.log("RECENT EDIT DETECTED, IGNORING ONDIDCHANGE TRIGGER");
-                    delete _this.recent_edits[i];
-                    return;
-                }
-            });
+        if (Object.keys(this.recent_edits).length === 0 && this.recent_edits.constructor === Object) {
+            ; // no recent edits
+        }
+        else {
+            for (var i in this.recent_edits) {
+                var text_edits = this.recent_edits[i];
+                text_edits.forEach(function (textedit) {
+                    if (textedit.range.contains(evt.document.positionAt(change.rangeOffset))) {
+                        console.log("RECENT EDIT DETECTED, IGNORING ONDIDCHANGE TRIGGER");
+                        delete _this.recent_edits[i];
+                        return;
+                    }
+                });
+            }
         }
         console.log("NON REMOTE EDIT");
         var path = Utils.GetShortFilePath(evt.document);

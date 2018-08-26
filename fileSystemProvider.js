@@ -56,7 +56,6 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
                 });
             }
             _this.eventEmitter.once('websocket_init_complete', function () {
-                console.warn("WEBSOCK COMPLETE FS PROVIDER");
                 _this.environmentConnections[id] = {
                     'status': 'connected'
                 };

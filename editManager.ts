@@ -197,12 +197,6 @@ export class EditManager {
     }
 
     queuePendingEdit(r, d, i) {
-        console.warn("queuePendingEdit:");
-        console.log({
-            'r': r,
-            'd': d,
-            'i': i
-        });
         this.pending_edit.addEdit(parseInt(r), d, i);
     }
 
@@ -217,16 +211,19 @@ export class EditManager {
     }
 
     processTextDocumentChange(change, evt) {
-        for (var i in this.recent_edits) {
-            let text_edits = this.recent_edits[i];
-            console.log(text_edits);
-            text_edits.forEach(textedit => {
-                if (textedit.range.contains(evt.document.positionAt(change.rangeOffset))) {
-                    console.log("RECENT EDIT DETECTED, IGNORING ONDIDCHANGE TRIGGER");
-                    delete this.recent_edits[i];
-                    return;
-                }
-            });
+        if (Object.keys(this.recent_edits).length === 0 && this.recent_edits.constructor === Object) {
+            ; // no recent edits
+        } else {
+            for (var i in this.recent_edits) {
+                let text_edits = this.recent_edits[i];
+                text_edits.forEach(textedit => {
+                    if (textedit.range.contains(evt.document.positionAt(change.rangeOffset))) {
+                        console.log("RECENT EDIT DETECTED, IGNORING ONDIDCHANGE TRIGGER");
+                        delete this.recent_edits[i];
+                        return;
+                    }
+                });
+            }
         }
         
         console.log("NON REMOTE EDIT");

@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.9.5]
+- Fix for infinite loading bug where remote and local workspace folders are present
+- Fix for remote workspace folder cursor and edits
+
 ## [0.9.4]
 - Added ability to authenticate with MFA token
 - Added ability to assume AWS role

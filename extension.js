@@ -492,24 +492,26 @@ function setEventEmitterEvents() {
             syncStrategy = "none";
         }
         
-        if (syncStrategy == "prompt") {
-            vscode.window.showInformationMessage("How would you like to sync?", "None", "Download Only", "Bi-directional").then((response) => {
-                if (response == "None") {
-                    extensionConfig.update("syncStrategy", "none", vscode.ConfigurationTarget.Workspace);
+        setTimeout(() => { // TODO: This blocks, why does this block?!?
+            if (syncStrategy == "prompt") {
+                vscode.window.showInformationMessage("How would you like to sync?", "None", "Download Only", "Bi-directional").then((response) => {
+                    if (response == "None") {
+                        extensionConfig.update("syncStrategy", "none", vscode.ConfigurationTarget.Workspace);
+                        continueSync("none");
+                    } else if (response == "Download Only") {
+                        extensionConfig.update("syncStrategy", "downloadonly", vscode.ConfigurationTarget.Workspace);
+                        continueSync("downloadonly");
+                    } else if (response == "Bi-directional") {
+                        extensionConfig.update("syncStrategy", "bidirectional", vscode.ConfigurationTarget.Workspace);
+                        continueSync("bidirectional");
+                    }
+                }).catch(() => {
                     continueSync("none");
-                } else if (response == "Download Only") {
-                    extensionConfig.update("syncStrategy", "downloadonly", vscode.ConfigurationTarget.Workspace);
-                    continueSync("downloadonly");
-                } else if (response == "Bi-directional") {
-                    extensionConfig.update("syncStrategy", "bidirectional", vscode.ConfigurationTarget.Workspace);
-                    continueSync("bidirectional");
-                }
-            }).catch(() => {
-                continueSync("none");
-            });
-        } else {
-            continueSync(syncStrategy);
-        }
+                });
+            } else {
+                continueSync(syncStrategy);
+            }
+        }, 1);
     });
     
     eventEmitter.on('USER_JOIN', (event_data) => {
@@ -562,11 +564,11 @@ function setEventEmitterEvents() {
             let join_doc_response = JSON.parse(join_doc_chunks.join(""));
             join_doc_chunks = [];
     
-            let inodePath = path.join(vscode.workspace.rootPath, "/" + event_data["docId"]);
+            let path = Utils.EnsureLeadingSlash(event_data["docId"]);
             let document = null;
 
             vscode.workspace.textDocuments.forEach(doc => {
-                if (Utils.GetShortFilePath(doc) == "/" + event_data["docId"]) {
+                if (Utils.GetShortFilePath(doc) == Utils.EnsureLeadingSlash(event_data["docId"])) {
                     document = doc;
                 }
             });
@@ -587,9 +589,9 @@ function setEventEmitterEvents() {
             )
             editManager.addRemoteEdit(edit);
             vscode.workspace.applyEdit(edit).then(() => {
-                editManager.lastKnownRemoteDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
-                editManager.lastKnownLocalDocumentText[Utils.ShortenFilePath(inodePath)] = join_doc_response['contents'];
-                console.log("Initialized lastKnownTexts for doc: " + Utils.ShortenFilePath(inodePath));
+                editManager.lastKnownRemoteDocumentText[Utils.ShortenFilePath(path)] = join_doc_response['contents'];
+                editManager.lastKnownLocalDocumentText[Utils.ShortenFilePath(path)] = join_doc_response['contents'];
+                console.log("Initialized lastKnownTexts for doc: " + Utils.ShortenFilePath(path));
                 editManager.revNum = join_doc_response['revNum'];
             });
 
@@ -598,7 +600,7 @@ function setEventEmitterEvents() {
             Object.values(join_doc_response['selections']).forEach(client => {
                 let internalclient = clients[client["clientId"]];
 
-                userManager.setPosition(client["clientId"], inodePath, document, {
+                userManager.setPosition(client["clientId"], path, document, {
                     start: new vscode.Position(client["selection"][0], client["selection"][1]),
                     end: new vscode.Position(client["selection"][2], client["selection"][3])
                 }, client["selection"][4]);
@@ -745,13 +747,16 @@ function setEventEmitterEvents() {
 
                 // Set selection pointer
                 let client = clients[event_data["clientId"]];
-                vscode.workspace.openTextDocument(documentUri)
-                .then((document) => {
-                    userManager.setPosition(event_data["clientId"], fileName, document, {
-                        start: new vscode.Position(event_data["selection"][0], event_data["selection"][1]),
-                        end: new vscode.Position(event_data["selection"][2], event_data["selection"][3])
-                    }, event_data["selection"][4]);
-                    client['client'].refresh();
+
+                
+                vscode.workspace.textDocuments.forEach(document => {
+                    if (Utils.GetShortFilePath(document) == Utils.EnsureLeadingSlash(event_data["docId"])) {
+                        userManager.setPosition(event_data["clientId"], fileName, document, {
+                            start: new vscode.Position(event_data["selection"][0], event_data["selection"][1]),
+                            end: new vscode.Position(event_data["selection"][2], event_data["selection"][3])
+                        }, event_data["selection"][4]);
+                        client['client'].refresh();
+                    }
                 });
 
                 editManager.lastKnownRemoteDocumentText[Utils.EnsureLeadingSlash(fileName)] = textDocument.getText();
@@ -769,15 +774,19 @@ function setEventEmitterEvents() {
         console.log("CURSOR UPDATE");
     
         let fileName = event_data["docId"];
-        let documentUri = Utils.FileNameToUri(fileName);
-        vscode.workspace.openTextDocument(documentUri)
-            .then((document) => {
-                userManager.setPosition(event_data["clientId"], fileName, document, {
+
+        console.log(vscode.workspace.textDocuments);
+
+        vscode.workspace.textDocuments.forEach(document => {
+            if (Utils.GetShortFilePath(document) == Utils.EnsureLeadingSlash(fileName)) {
+                console.warn("setting pos for " + fileName);
+                userManager.setPosition(event_data["clientId"], Utils.EnsureLeadingSlash(fileName), document, {
                     start: new vscode.Position(event_data["selection"][0], event_data["selection"][1]),
                     end: new vscode.Position(event_data["selection"][2], event_data["selection"][3])
                 }, event_data["selection"][4]);
                 client['client'].refresh();
-            });
+            }
+        });
     });
 
     eventEmitter.on('USER_STATE', (event_data) => {
@@ -1214,7 +1223,7 @@ function process_cursor_update(event) {
                         "type":"CURSOR_UPDATE",
                         "data":
                         {
-                            "docId": Utils.ShortenFilePath(event.textEditor.document.fileName),
+                            "docId": Utils.GetShortFilePath(event.textEditor.document),
                             "selection": [
                                 event.selections[0].start.line,
                                 event.selections[0].start.character,

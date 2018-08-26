@@ -78,7 +78,6 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
             }
 
             this.eventEmitter.once('websocket_init_complete', () => {
-                console.warn("WEBSOCK COMPLETE FS PROVIDER");
                 this.environmentConnections[id] = {
                     'status': 'connected'
                 };
