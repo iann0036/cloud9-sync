@@ -131,14 +131,20 @@ function commandSyncupfsitem(ctx) {
 }
 
 function commandAddenvironment() {
-    vscode.window.showInputBox({
-        placeHolder: "",
-        prompt: "Environment name.",
-        value: "",
-        ignoreFocusOut: true
-    }).then(function(env_name){
-        if (env_name && env_name.length > 0) {
-            Utils.GetAWSCreds().then(aws_creds => {
+    Utils.GetAWSCreds().then(aws_creds => {
+        if (aws_creds == null) {
+            vscode.window.setStatusBarMessage("Fill in your AWS credentials to begin", 5000);
+            commandSetup();
+            return;
+        }
+
+        vscode.window.showInputBox({
+            placeHolder: "",
+            prompt: "Environment name.",
+            value: "",
+            ignoreFocusOut: true
+        }).then(env_name => {
+            if (env_name && env_name.length > 0) {
                 extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
                 awsregion = extensionConfig.get('region');
 
@@ -176,12 +182,14 @@ function commandAddenvironment() {
 
                     refreshEnvironmentsInSidebar();
                 });
-            });
-        }
+            }
+        });
     });
 }
 
 function commandSendchat() {
+    // TODO: Check if connected
+
     vscode.window.showInputBox({
         placeHolder: "",
         prompt: "Chat message.",

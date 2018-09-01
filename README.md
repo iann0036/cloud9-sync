@@ -49,3 +49,14 @@ Setting | Description | Set When
 `cloud9sync.assumeRole` | The ARN of a role to assume into | None (only manually set)
 `cloud9sync.mfaSerial` | The serial number or ARN of your MFA device | None (only manually set)
 `cloud9sync.sessionDuration` | The duration (in seconds) of the STS session | None (only manually set)
+
+
+## Troubeshooting
+
+> User: arn:aws:iam::xxxxxxxxxx:user/xxxxxxx is not authorized to perform: cloud9:CreateEnvironmentToken on resource: xxxxxxxxxxxxxxx with an explicit deny
+
+This error generally indicates the creator of the Cloud9 environment has not shared the environment with the user you're trying to log in as. You should log in to the Cloud9 web interface and [share the environment](https://docs.aws.amazon.com/cloud9/latest/user-guide/share-environment.html#share-environment-invite-user) with your Visual Studio Code user.
+
+> Cannot resolve workspace folder
+
+This warning can sometimes be shown when you have added an environment to the workspace and presents the new workspace folder in yellow. This can generally be ignored and will go away when the environment completes its connection. If you do see other issues with this behaviour, please [raise an issue](https://github.com/iann0036/cloud9-sync/issues).

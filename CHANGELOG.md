@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.9.6]
+- Add environment should prompt if creds are not set
+
 ## [0.9.5]
 - Fix for infinite loading bug where remote and local workspace folders are present
 - Fix for remote workspace folder cursor and edits
