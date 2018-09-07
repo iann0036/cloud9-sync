@@ -126,7 +126,12 @@ export class FileManager {
                 console.warn("LISTDIR RESPONSE");
                 console.log(httpResponse);
                 console.log(body);
-                resolve(JSON.parse(body));
+                try {
+                    let parsed_body = JSON.parse(body);
+                    resolve(parsed_body);
+                } catch(err) {
+                    reject(body)
+                }
             });
         });
     }

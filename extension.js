@@ -40,11 +40,11 @@ function activate(context) {
     userProvider = new ViewProviders.UserProvider();
     environmentProvider = new ViewProviders.EnvironmentProvider();
     chatProvider = new ViewProviders.ChatProvider();
-    if (typeof vscode.window.createTerminalRenderer === "function") {
-        terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
-    } else {
-        terminalManager = new TerminalManager.TerminalManager(context.extensionPath, eventEmitter);
-    }
+    //if (typeof vscode.window.createTerminalRenderer === "function") {
+        //terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
+    //} else {
+    terminalManager = new TerminalManager.TerminalManager(context.extensionPath, eventEmitter);
+    //}
     websocketProvider = new WebsocketProvider.WebsocketProvider(eventEmitter);
     fileManager = new FileManager.FileManager(eventEmitter);
     editManager = new EditManager.EditManager(eventEmitter, websocketProvider);

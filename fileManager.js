@@ -114,7 +114,13 @@ var FileManager = /** @class */ (function () {
                 console.warn("LISTDIR RESPONSE");
                 console.log(httpResponse);
                 console.log(body);
-                resolve(JSON.parse(body));
+                try {
+                    var parsed_body = JSON.parse(body);
+                    resolve(parsed_body);
+                }
+                catch (err) {
+                    reject(body);
+                }
             });
         });
     };

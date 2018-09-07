@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.9.7]
+- Fix terminal actions for August VS Code release
+
 ## [0.9.6]
 - Add environment should prompt if creds are not set
 
