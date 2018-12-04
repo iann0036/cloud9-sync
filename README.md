@@ -3,6 +3,7 @@
 >**Note:** This extension is still in alpha stages. Please [raise an issue](https://github.com/iann0036/cloud9-sync/issues) if you experience any problems.
 
 ![Live Sync for AWS Cloud9 Screenshot](https://raw.githubusercontent.com/iann0036/cloud9-sync/master/resources/screenshot.png)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fiann0036%2Fcloud9-sync.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fiann0036%2Fcloud9-sync?ref=badge_shield)
 
 ## Setup
 
@@ -60,3 +61,7 @@ This error generally indicates the creator of the Cloud9 environment has not sha
 > Cannot resolve workspace folder
 
 This warning can sometimes be shown when you have added an environment to the workspace and presents the new workspace folder in yellow. This can generally be ignored and will go away when the environment completes its connection. If you do see other issues with this behaviour, please [raise an issue](https://github.com/iann0036/cloud9-sync/issues).
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fiann0036%2Fcloud9-sync.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fiann0036%2Fcloud9-sync?ref=badge_large)
