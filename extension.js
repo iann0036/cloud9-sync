@@ -831,6 +831,44 @@ function setEventEmitterEvents() {
     });
 }
 
+function listEnvironments(awsregion, aws_creds, environmentIds) {
+    return new Promise((resolve, reject) => {
+        let awsreq = aws4.sign({
+            service: 'cloud9',
+            region: awsregion,
+            method: 'POST',
+            path: '/',
+            headers: {
+            'Content-Type': 'application/x-amz-json-1.1',
+            'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.ListEnvironments'
+            },
+            body: '{}'
+        }, aws_creds);
+
+        request.post({
+            url: "https://" + awsreq.hostname + awsreq.path,
+            headers: awsreq.headers,
+            body: awsreq.body,
+            rejectUnauthorized: false,
+            proxy: Utils.GetProxy()
+        }, function(err, httpResponse, env_token) {
+            console.log(err);
+            console.log(httpResponse);
+            if (err != null || !httpResponse.statusCode.toString().startsWith("2")) {
+                vscode.window.setStatusBarMessage("Unable to connect to list environments", 5000);
+                resolve(environmentIds);
+                return;
+            }
+
+            let response = JSON.parse(httpResponse['body']);
+
+            environmentIds = environmentIds.concat(response.environmentIds);
+
+            resolve(environmentIds);
+        });
+    });
+}
+
 function refreshEnvironmentsInSidebar() {
     return new Promise((resolve, reject) => {
         Utils.GetAWSCreds().then(aws_creds => {
@@ -843,35 +881,7 @@ function refreshEnvironmentsInSidebar() {
                 return;
             }
 
-            let awsreq = aws4.sign({
-                service: 'cloud9',
-                region: awsregion,
-                method: 'POST',
-                path: '/',
-                headers: {
-                'Content-Type': 'application/x-amz-json-1.1',
-                'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.ListEnvironments'
-                },
-                body: '{}'
-            }, aws_creds);
-
-            request.post({
-                url: "https://" + awsreq.hostname + awsreq.path,
-                headers: awsreq.headers,
-                body: awsreq.body,
-                rejectUnauthorized: false,
-                proxy: Utils.GetProxy()
-            }, function(err, httpResponse, env_token) {
-                console.log(err);
-                console.log(httpResponse);
-                if (err != null || !httpResponse.statusCode.toString().startsWith("2")) {
-                    vscode.window.setStatusBarMessage("Unable to connect to list environments", 5000);
-                    resolve([]);
-                    return;
-                }
-
-                let response = JSON.parse(httpResponse['body']);
-
+            listEnvironments(awsregion, aws_creds, []).then(environmentIds => {
                 let awsreq = aws4.sign({
                     service: 'cloud9',
                     region: awsregion,
@@ -881,7 +891,7 @@ function refreshEnvironmentsInSidebar() {
                     'Content-Type': 'application/x-amz-json-1.1',
                     'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.DescribeEnvironments'
                     },
-                    body: '{"environmentIds":' + JSON.stringify(response.environmentIds) + '}'
+                    body: '{"environmentIds":' + JSON.stringify(environmentIds) + '}'
                 }, aws_creds);
 
                 request.post({
