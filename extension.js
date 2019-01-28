@@ -831,8 +831,14 @@ function setEventEmitterEvents() {
     });
 }
 
-function listEnvironments(awsregion, aws_creds, environmentIds) {
+function listEnvironments(awsregion, aws_creds, environmentIds, nextToken) {
     return new Promise((resolve, reject) => {
+        var body = '{}'
+
+        if (nextToken) {
+            body = '{"nextToken": "' + nextToken + '"}';
+        }
+
         let awsreq = aws4.sign({
             service: 'cloud9',
             region: awsregion,
@@ -842,7 +848,7 @@ function listEnvironments(awsregion, aws_creds, environmentIds) {
             'Content-Type': 'application/x-amz-json-1.1',
             'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.ListEnvironments'
             },
-            body: '{}'
+            body: body
         }, aws_creds);
 
         request.post({
@@ -864,7 +870,13 @@ function listEnvironments(awsregion, aws_creds, environmentIds) {
 
             environmentIds = environmentIds.concat(response.environmentIds);
 
-            resolve(environmentIds);
+            if (response.nextToken) {
+                listEnvironments(awsregion, aws_creds, environmentIds, response.nextToken).then(envIds => {
+                    resolve(envIds);
+                });
+            } else {
+                resolve(environmentIds);
+            }
         });
     });
 }
@@ -881,7 +893,7 @@ function refreshEnvironmentsInSidebar() {
                 return;
             }
 
-            listEnvironments(awsregion, aws_creds, []).then(environmentIds => {
+            listEnvironments(awsregion, aws_creds, [], false).then(environmentIds => {
                 let awsreq = aws4.sign({
                     service: 'cloud9',
                     region: awsregion,
@@ -906,7 +918,13 @@ function refreshEnvironmentsInSidebar() {
                     if ('environments' in response) {
                         environmentProvider.clearAll(); // TODO: Make this do a merge instead of replace
                         response['environments'].forEach(env => {
-                            environmentProvider.addEnvironment(env);
+                            if (extensionConfig.get('environmentOwner') && extensionConfig.get('environmentOwner') != "") {
+                                if (env.ownerArn.includes(extensionConfig.get('environmentOwner'))) {
+                                    environmentProvider.addEnvironment(env);
+                                }
+                            } else {
+                                environmentProvider.addEnvironment(env);
+                            }
                         });
                         resolve(response['environments']);
                     }

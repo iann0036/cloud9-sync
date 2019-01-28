@@ -6,7 +6,7 @@
     "name": "Ian Mckay",
     "email": "cloud9sync@ianmckay.com.au"
   },
-  "version": "0.9.8",
+  "version": "0.9.9",
   "publisher": "iann0036",
   "icon": "resources/logo_128.png",
   "engines": {
@@ -253,6 +253,11 @@
           "type": "string",
           "default": "3600",
           "description": "The duration (in seconds) of the STS session."
+        },
+        "cloud9sync.environmentOwner": {
+          "type": "string",
+          "default": "",
+          "description": "Filter by this environment owner (wildcard match)."
         }
       }
     }

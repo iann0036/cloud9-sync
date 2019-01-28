@@ -49,6 +49,7 @@ Setting | Description | Set When
 `cloud9sync.assumeRole` | The ARN of a role to assume into | None (only manually set)
 `cloud9sync.mfaSerial` | The serial number or ARN of your MFA device | None (only manually set)
 `cloud9sync.sessionDuration` | The duration (in seconds) of the STS session | None (only manually set)
+`cloud9sync.environmentOwner` | Filters environment listings based on a wildcard match against the owner ARN | None (only manually set)
 
 
 ## Troubeshooting
