@@ -1,14 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var vscode = require("vscode");
-var path = require("path");
-var aws4 = require("aws4");
-var request = require("request");
-var xml2js = require("xml2js");
+const vscode = require("vscode");
+const path = require("path");
+const aws4 = require("aws4");
+const request = require("request");
+const xml2js = require("xml2js");
 var awsSession = null;
 function promptForMFAIfRequired() {
-    return new Promise(function (resolve, reject) {
-        var extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+    return new Promise((resolve, reject) => {
+        let extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
         if (extensionConfig.get('mfaSerial') != "") {
             vscode.window.showInputBox({
                 placeHolder: "",
@@ -25,9 +25,9 @@ function promptForMFAIfRequired() {
     });
 }
 function GetAWSCreds() {
-    return new Promise(function (resolve, reject) {
-        var extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
-        var awsregion = extensionConfig.get('region');
+    return new Promise((resolve, reject) => {
+        let extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+        let awsregion = extensionConfig.get('region');
         if (extensionConfig.get('accessKey') == "" ||
             extensionConfig.get('secretKey') == "" ||
             !extensionConfig.get('accessKey') ||
@@ -38,23 +38,23 @@ function GetAWSCreds() {
             resolve(awsSession['value']);
         }
         else if (extensionConfig.get('mfaSerial') != "" || extensionConfig.get('assumeRole') != "") {
-            var path_1 = "/?Version=2011-06-15&DurationSeconds=" + extensionConfig.get('sessionDuration');
+            let path = "/?Version=2011-06-15&DurationSeconds=" + extensionConfig.get('sessionDuration');
             if (extensionConfig.get('mfaSerial') != "") {
-                path_1 += "&SerialNumber=" + extensionConfig.get('mfaSerial');
+                path += "&SerialNumber=" + extensionConfig.get('mfaSerial');
             }
             if (extensionConfig.get('assumeRole') != "") {
-                path_1 += '&Action=AssumeRole&RoleSessionName=VSCodeCloud9&RoleArn=' + extensionConfig.get('assumeRole');
+                path += '&Action=AssumeRole&RoleSessionName=VSCodeCloud9&RoleArn=' + extensionConfig.get('assumeRole');
             }
             else {
-                path_1 += '&Action=GetSessionToken';
+                path += '&Action=GetSessionToken';
             }
-            promptForMFAIfRequired().then(function (mfa_token) {
-                path_1 += mfa_token;
-                var awsreq = aws4.sign({
+            promptForMFAIfRequired().then((mfa_token) => {
+                path += mfa_token;
+                let awsreq = aws4.sign({
                     service: 'sts',
                     region: 'us-east-1',
                     method: 'POST',
-                    path: path_1,
+                    path: path,
                     headers: {
                         'Content-Type': 'application/x-amz-json-1.1'
                     },
@@ -74,7 +74,7 @@ function GetAWSCreds() {
                         ignoreAttrs: true
                     }, function (err, result) {
                         // TODO: Handle failure here
-                        var creds = null;
+                        let creds = null;
                         if (extensionConfig.get('assumeRole') != "") {
                             creds = result['AssumeRoleResponse']['AssumeRoleResult'][0]['Credentials'][0];
                         }
@@ -105,19 +105,19 @@ function GetAWSCreds() {
 }
 exports.GetAWSCreds = GetAWSCreds;
 function FileNameToUri(fileName) {
-    var rootPath = "";
-    vscode.workspace.workspaceFolders.forEach(function (workspaceFolder) {
+    let rootPath = "";
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
         if (workspaceFolder.uri.scheme == "file") {
             rootPath = workspaceFolder.uri.fsPath;
         }
     });
-    var filePath = path.join(rootPath, fileName);
+    const filePath = path.join(rootPath, fileName);
     return vscode.Uri.file(filePath);
 }
 exports.FileNameToUri = FileNameToUri;
 function ShortenFilePath(filePath) {
-    var rootPath = "";
-    vscode.workspace.workspaceFolders.forEach(function (workspaceFolder) {
+    let rootPath = "";
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
         if (workspaceFolder.uri.scheme == "file") {
             rootPath = workspaceFolder.uri.fsPath;
         }
@@ -126,12 +126,12 @@ function ShortenFilePath(filePath) {
 }
 exports.ShortenFilePath = ShortenFilePath;
 function GetShortFilePath(document) {
-    var filePath = document.fileName;
-    var rootPath = "";
+    let filePath = document.fileName;
+    let rootPath = "";
     if (document.uri.scheme == "cloud9") {
         filePath = "/" + document.uri.path.split("/").slice(2).join('/');
     }
-    vscode.workspace.workspaceFolders.forEach(function (workspaceFolder) {
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
         if (workspaceFolder.uri.scheme == "file") {
             rootPath = workspaceFolder.uri.fsPath;
         }
@@ -146,13 +146,13 @@ function EnsureLeadingSlash(str) {
 }
 exports.EnsureLeadingSlash = EnsureLeadingSlash;
 function GetRegion() {
-    var extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+    let extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
     return extensionConfig.get('region');
 }
 exports.GetRegion = GetRegion;
 function GetProxy() {
-    var extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
-    var proxy = extensionConfig.get('proxy');
+    let extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+    let proxy = extensionConfig.get('proxy');
     if (proxy == "")
         return null;
     return proxy;
@@ -165,10 +165,10 @@ function ReducePromises(array, fn) {
             return fn(item).then(function (data) {
                 results.push(data);
                 return results;
-            }).catch(function (y) {
+            }).catch((y) => {
                 console.error(y);
             });
-        }).catch(function (x) {
+        }).catch((x) => {
             console.error(x);
         });
     }, Promise.resolve());

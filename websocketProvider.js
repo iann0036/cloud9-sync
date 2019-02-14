@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var vscode = require("vscode");
-var WebSocket = require("ws");
-var Utils = require("./utils");
-var HttpsProxyAgent = require("https-proxy-agent");
-var Url = require("url");
-var WebsocketProvider = /** @class */ (function () {
-    function WebsocketProvider(eventEmitter) {
+const vscode = require("vscode");
+const WebSocket = require("ws");
+const Utils = require("./utils");
+const HttpsProxyAgent = require("https-proxy-agent");
+const Url = require("url");
+class WebsocketProvider {
+    constructor(eventEmitter) {
         this.eventEmitter = eventEmitter;
         this.sessionState = "NOT_CONNECTED";
         this.awsregion = Utils.GetRegion();
     }
-    WebsocketProvider.prototype.disconnect = function () {
+    disconnect() {
         clearInterval(this.ch2_interval);
         clearInterval(this.ping_interval);
         clearInterval(this.connect_interval);
@@ -19,19 +19,18 @@ var WebsocketProvider = /** @class */ (function () {
             this.ws.terminate();
         }
         this.sessionState = "NOT_CONNECTED";
-    };
-    WebsocketProvider.prototype.connect = function (vfsid, xauth, sid, cookieJar, environmentId) {
-        var _this = this;
+    }
+    connect(vfsid, xauth, sid, cookieJar, environmentId) {
         this.sessionState = "CONNECTING";
         this.last_seq = 10001;
         this.my_seq = 20002;
         this.vfsid = vfsid;
         console.log("Declaring websocket");
-        var cookiestr = cookieJar.getCookieString('https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId);
+        let cookiestr = cookieJar.getCookieString('https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId);
         try {
             console.log('wss://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=websocket&sid=' + sid);
-            var proxy = Utils.GetProxy();
-            var agent = void 0;
+            let proxy = Utils.GetProxy();
+            let agent;
             if (proxy) {
                 agent = new HttpsProxyAgent(Url.parse(proxy));
             }
@@ -48,44 +47,44 @@ var WebsocketProvider = /** @class */ (function () {
                     'initialDelay': 60000
                 }
             });
-            this.ws.addEventListener('open', function () {
+            this.ws.addEventListener('open', () => {
                 console.log("WebSocket opened");
-                _this.ws.send('2probe');
-                _this.ch2_interval = setInterval(function () {
-                    _this.ws.send("2");
+                this.ws.send('2probe');
+                this.ch2_interval = setInterval(() => {
+                    this.ws.send("2");
                 }, 25000);
             });
-            this.ws.addEventListener('message', function (data) {
+            this.ws.addEventListener('message', (data) => {
                 console.log("---GOT MESSAGE---");
                 console.log(data.data);
-                var messageType = parseInt(data.data[0]);
+                let messageType = parseInt(data.data[0]);
                 if (data.data == "3probe") {
-                    _this.ws.send("5");
-                    _this.init();
+                    this.ws.send("5");
+                    this.init();
                 }
                 else if (messageType == 4) {
-                    var message = JSON.parse(data.data.substring(1));
+                    let message = JSON.parse(data.data.substring(1));
                     if ('ack' in message) {
-                        _this.eventEmitter.emit('ack', message['ack']);
+                        this.eventEmitter.emit('ack', message['ack']);
                     }
                     if ('seq' in message) {
-                        _this.last_seq = message['seq'];
-                        _this.ws.send("4" + JSON.stringify({
-                            "ack": _this.last_seq
+                        this.last_seq = message['seq'];
+                        this.ws.send("4" + JSON.stringify({
+                            "ack": this.last_seq
                         }));
-                        _this.eventEmitter.emit('ch4_data', message['d'], environmentId);
+                        this.eventEmitter.emit('ch4_data', message['d'], environmentId);
                     }
                 }
             });
-            this.ws.addEventListener('error', function (data) {
+            this.ws.addEventListener('error', (data) => {
                 vscode.window.showErrorMessage("Error connecting with AWS Cloud9 environment");
                 console.warn("---ERROR---");
                 console.log(data);
             });
-            this.ws.addEventListener('close', function () {
+            this.ws.addEventListener('close', () => {
                 vscode.window.showWarningMessage("Disconnected from AWS Cloud9 environment");
                 console.warn('---DISCONNECTED---');
-                _this.eventEmitter.emit('disconnect');
+                this.eventEmitter.emit('disconnect');
             });
         }
         catch (error) {
@@ -93,9 +92,8 @@ var WebsocketProvider = /** @class */ (function () {
             vscode.window.showWarningMessage("There was an error connecting to the AWS Cloud9 environment");
             this.eventEmitter.emit('disconnect');
         }
-    };
-    WebsocketProvider.prototype.init = function () {
-        var _this = this;
+    }
+    init() {
         console.log("Starting Websock Init");
         this.send_ch4_message([1, ["onData", "onEnd", "onClose", "onError", "write", "end", "destroy", "resume", "pause", "onExit", "onProcessClose", "onPtyKill", "onChange", "onEvent", "vfsDying"], false]);
         this.send_ch4_message(["execFile", "node", { "args": ["-e", "log(Date.now())"], "encoding": "utf8" }, { "$": 2 }]);
@@ -127,26 +125,25 @@ var WebsocketProvider = /** @class */ (function () {
         );*/
         this.send_ch4_message(["call", "jsonalyzer_server", "init", [{ "environmentDir": "/home/ec2-user/environment", "homeDir": "/home/ec2-user", "packagePath": "plugins/c9.ide.language.jsonalyzer/jsonalyzer", "useCollab": true, "useSend": false, "maxServerCallInterval": 2000, "provides": ["jsonalyzer"], "consumes": ["Plugin", "commands", "language", "c9", "watcher", "save", "language.complete", "dialog.error", "ext", "collab", "collab.connect", "language.worker_util_helper", "error_handler", "installer"] }, { "$": 30 }]]);
         this.send_ch4_message(["stat", "/", {}, { $: 31 }]);
-        this.connect_interval = setInterval(function () {
-            _this.send_ch4_message(["call", "collab", "connect", [{ "basePath": "/home/ec2-user/environment", "clientId": _this.vfsid }, { "$": 32 }]]);
+        this.connect_interval = setInterval(() => {
+            this.send_ch4_message(["call", "collab", "connect", [{ "basePath": "/home/ec2-user/environment", "clientId": this.vfsid }, { "$": 32 }]]);
         }, 3000);
-    };
-    WebsocketProvider.prototype.postconnect = function () {
-        var _this = this;
+    }
+    postconnect() {
         console.log("POST CONNECT WEBSOCK INIT");
         clearInterval(this.connect_interval);
-        this.ping_interval = setInterval(function () {
-            _this.send_ch4_message(["call", "ping", "ping", ["serverTime", { "$": 32 }]]);
+        this.ping_interval = setInterval(() => {
+            this.send_ch4_message(["call", "ping", "ping", ["serverTime", { "$": 32 }]]);
         }, 10000);
         this.send_ch4_message(["call", "ping", "ping", ["serverTime", { "$": 32 }]]);
         this.send_ch4_message(["extend", "collab", { "file": "c9.ide.collab/server/collab-server.js" }, { "$": 32 }]);
         this.eventEmitter.emit('websocket_init_complete');
         this.sessionState = "CONNECTED";
-    };
-    WebsocketProvider.prototype.send_ch4_message = function (data) {
-        var seq = this.my_seq;
+    }
+    send_ch4_message(data) {
+        let seq = this.my_seq;
         this.my_seq += 1;
-        var msg = {
+        let msg = {
             'ack': this.last_seq,
             'seq': seq,
             'd': data
@@ -155,7 +152,6 @@ var WebsocketProvider = /** @class */ (function () {
         console.log('4' + JSON.stringify(msg));
         this.ws.send('4' + JSON.stringify(msg));
         return seq;
-    };
-    return WebsocketProvider;
-}());
+    }
+}
 exports.WebsocketProvider = WebsocketProvider;

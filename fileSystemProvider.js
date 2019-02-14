@@ -1,20 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var vscode = require("vscode");
-var text_encoding_1 = require("text-encoding");
-var File = /** @class */ (function () {
-    function File(name) {
+const vscode = require("vscode");
+const text_encoding_1 = require("text-encoding");
+class File {
+    constructor(name) {
         this.type = vscode.FileType.File;
         this.ctime = Date.now();
         this.mtime = Date.now();
         this.size = 0;
         this.name = name;
     }
-    return File;
-}());
+}
 exports.File = File;
-var Directory = /** @class */ (function () {
-    function Directory(name) {
+class Directory {
+    constructor(name) {
         this.type = vscode.FileType.Directory;
         this.ctime = Date.now();
         this.mtime = Date.now();
@@ -22,11 +21,10 @@ var Directory = /** @class */ (function () {
         this.name = name;
         this.entries = new Map();
     }
-    return Directory;
-}());
+}
 exports.Directory = Directory;
-var Cloud9FileSystemProvider = /** @class */ (function () {
-    function Cloud9FileSystemProvider(fileManager, eventEmitter) {
+class Cloud9FileSystemProvider {
+    constructor(fileManager, eventEmitter) {
         this.fileManager = fileManager;
         this.eventEmitter = eventEmitter;
         this.root = new Directory('');
@@ -38,33 +36,32 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
         //this.createDirectory(vscode.Uri.parse(`cloud9:/123/`));
     }
     // --- manage file metadata
-    Cloud9FileSystemProvider.prototype._getEnvConnection = function (id) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            if (id in _this.environmentConnections) {
-                if (_this.environmentConnections[id].status == "connected") {
+    _getEnvConnection(id) {
+        return new Promise((resolve, reject) => {
+            if (id in this.environmentConnections) {
+                if (this.environmentConnections[id].status == "connected") {
                     resolve(id);
                     return;
                 }
             }
             else {
-                _this.environmentConnections[id] = {
+                this.environmentConnections[id] = {
                     'status': 'connecting'
                 };
-                _this.eventEmitter.emit("request_connect", {
+                this.eventEmitter.emit("request_connect", {
                     id: id
                 });
             }
-            _this.eventEmitter.once('websocket_init_complete', function () {
-                _this.environmentConnections[id] = {
+            this.eventEmitter.once('websocket_init_complete', () => {
+                this.environmentConnections[id] = {
                     'status': 'connected'
                 };
                 resolve(id);
             });
         });
-    };
-    Cloud9FileSystemProvider.prototype._c9stattovsstat = function (stat) {
-        var entry;
+    }
+    _c9stattovsstat(stat) {
+        let entry;
         if (stat['mime'] == "inode/directory") {
             entry = new Directory(stat.name);
         }
@@ -75,32 +72,30 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
         entry.ctime = stat.ctime;
         entry.mtime = stat.mtime;
         return entry;
-    };
-    Cloud9FileSystemProvider.prototype.stat = function (uri) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var splituri = uri.path.split("/");
-            var environmentId = splituri[1];
-            _this._getEnvConnection(environmentId).then(function () {
-                _this.fileManager.stat(splituri.slice(2).join('/')).then(function (stats) {
-                    resolve(_this._c9stattovsstat(stats));
-                }).catch(function (err) {
+    }
+    stat(uri) {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.stat(splituri.slice(2).join('/')).then(stats => {
+                    resolve(this._c9stattovsstat(stats));
+                }).catch(err => {
                     reject(err);
                 });
             });
         });
         //reject(vscode.FileSystemError.FileNotFound());
-    };
-    Cloud9FileSystemProvider.prototype.readDirectory = function (uri) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var splituri = uri.path.split("/");
-            var environmentId = splituri[1];
-            _this._getEnvConnection(environmentId).then(function () {
-                _this.fileManager.listdir(splituri.slice(2).join('/')).then(function (stats) {
-                    var converted_stats = [];
-                    stats.forEach(function (stat) {
-                        var converted_stat = [stat['name'], vscode.FileType.File];
+    }
+    readDirectory(uri) {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.listdir(splituri.slice(2).join('/')).then(stats => {
+                    let converted_stats = [];
+                    stats.forEach(stat => {
+                        let converted_stat = [stat['name'], vscode.FileType.File];
                         if (stat['mime'] == "inode/directory") {
                             converted_stat[1] = vscode.FileType.Directory;
                         }
@@ -110,94 +105,83 @@ var Cloud9FileSystemProvider = /** @class */ (function () {
                 });
             });
         });
-    };
+    }
     // --- manage file contents
-    Cloud9FileSystemProvider.prototype.readFile = function (uri) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var splituri = uri.path.split("/");
-            var environmentId = splituri[1];
-            _this._getEnvConnection(environmentId).then(function () {
-                _this.fileManager.downloadFile("/" + splituri.slice(2).join('/'), null, null).then(function (body) {
-                    var uint8 = new text_encoding_1.TextEncoder().encode(body);
+    readFile(uri) {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.downloadFile("/" + splituri.slice(2).join('/'), null, null).then(body => {
+                    let uint8 = new text_encoding_1.TextEncoder().encode(body);
                     resolve(uint8);
                 });
             });
         });
-    };
-    Cloud9FileSystemProvider.prototype.writeFile = function (uri, content, options) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var splituri = uri.path.split("/");
-            var environmentId = splituri[1];
-            _this._getEnvConnection(environmentId).then(function () {
+    }
+    writeFile(uri, content, options) {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
                 if (options.create) {
-                    _this.fileManager.uploadRemoteFile("/" + splituri.slice(2).join('/'), content.toString()).then(function () {
+                    this.fileManager.uploadRemoteFile("/" + splituri.slice(2).join('/'), content.toString()).then(() => {
                         resolve();
-                        _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri });
+                        this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
                         return;
                     });
                 }
                 else if (options.overwrite) {
-                    _this.fileManager.uploadExistingFile("/" + splituri.slice(2).join('/'), content.toString()).then(function () {
+                    this.fileManager.uploadExistingFile("/" + splituri.slice(2).join('/'), content.toString()).then(() => {
                         resolve();
-                        _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri });
+                        this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
                         return;
                     });
                 }
             });
         });
-    };
+    }
     // --- manage files/folders
-    Cloud9FileSystemProvider.prototype.rename = function (oldUri, newUri, options) {
-        var oldsplituri = oldUri.path.split("/");
-        var newsplituri = newUri.path.split("/");
+    rename(oldUri, newUri, options) {
+        let oldsplituri = oldUri.path.split("/");
+        let newsplituri = newUri.path.split("/");
         this.eventEmitter.emit("send_ch4_message", ["rename", "/" + newsplituri.slice(2).join('/'), { "from": "/" + oldsplituri.slice(2).join('/') }, { "$": 92 }]);
         this._fireSoon({ type: vscode.FileChangeType.Deleted, uri: oldUri }, { type: vscode.FileChangeType.Created, uri: newUri });
-    };
-    Cloud9FileSystemProvider.prototype.delete = function (uri) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var splituri = uri.path.split("/");
-            var environmentId = splituri[1];
-            _this._getEnvConnection(environmentId).then(function () {
-                _this.fileManager.deleteRemoteFile("/" + splituri.slice(2).join('/')).then(function () {
+    }
+    delete(uri) {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            let environmentId = splituri[1];
+            this._getEnvConnection(environmentId).then(() => {
+                this.fileManager.deleteRemoteFile("/" + splituri.slice(2).join('/')).then(() => {
                     resolve();
-                    _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { uri: uri, type: vscode.FileChangeType.Deleted });
+                    this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { uri, type: vscode.FileChangeType.Deleted });
                     return;
                 });
             });
         });
-    };
-    Cloud9FileSystemProvider.prototype.createDirectory = function (uri) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var splituri = uri.path.split("/");
-            _this.eventEmitter.emit("send_ch4_message", ["mkdir", "/" + splituri.slice(2).join('/'), {}, { "$": 93 }]);
-            setTimeout(function () {
-                _this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri: uri });
+    }
+    createDirectory(uri) {
+        return new Promise((resolve, reject) => {
+            let splituri = uri.path.split("/");
+            this.eventEmitter.emit("send_ch4_message", ["mkdir", "/" + splituri.slice(2).join('/'), {}, { "$": 93 }]);
+            setTimeout(() => {
+                this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri });
                 resolve();
             }, 200);
         });
-    };
-    Cloud9FileSystemProvider.prototype.watch = function (resource, opts) {
+    }
+    watch(resource, opts) {
         // ignore, fires for all changes...
-        return new vscode.Disposable(function () { });
-    };
-    Cloud9FileSystemProvider.prototype._fireSoon = function () {
-        var _a;
-        var _this = this;
-        var events = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            events[_i] = arguments[_i];
-        }
-        (_a = this._bufferedEvents).push.apply(_a, events);
+        return new vscode.Disposable(() => { });
+    }
+    _fireSoon(...events) {
+        this._bufferedEvents.push(...events);
         clearTimeout(this._fireSoonHandle);
-        this._fireSoonHandle = setTimeout(function () {
-            _this._emitter.fire(_this._bufferedEvents);
-            _this._bufferedEvents.length = 0;
+        this._fireSoonHandle = setTimeout(() => {
+            this._emitter.fire(this._bufferedEvents);
+            this._bufferedEvents.length = 0;
         }, 5);
-    };
-    return Cloud9FileSystemProvider;
-}());
+    }
+}
 exports.Cloud9FileSystemProvider = Cloud9FileSystemProvider;

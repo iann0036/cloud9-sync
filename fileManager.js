@@ -1,20 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var vscode = require("vscode");
-var Utils = require("./utils");
-var request = require("request");
-var path = require("path");
-var fs = require("fs");
-var SYNC_TIME_VARIANCE = 20000;
-var FileManager = /** @class */ (function () {
-    function FileManager(eventEmitter) {
+const vscode = require("vscode");
+const Utils = require("./utils");
+const request = require("request");
+const path = require("path");
+const fs = require("fs");
+const SYNC_TIME_VARIANCE = 20000;
+class FileManager {
+    constructor(eventEmitter) {
         this.eventEmitter = eventEmitter;
         this.awsregion = Utils.GetRegion();
     }
-    FileManager.prototype.getFileWorkspacePath = function () {
+    getFileWorkspacePath() {
         if (vscode.workspace.workspaceFolders) {
-            var folders = vscode.workspace.workspaceFolders;
-            var workspaceFolder = void 0;
+            let folders = vscode.workspace.workspaceFolders;
+            let workspaceFolder;
             while (workspaceFolder = folders.pop()) {
                 if (workspaceFolder.uri.scheme == "file") {
                     return workspaceFolder.uri.fsPath;
@@ -23,44 +23,43 @@ var FileManager = /** @class */ (function () {
             ;
         }
         return null;
-    };
-    FileManager.prototype.recursiveDownload = function (startPath) {
-        var _this = this;
+    }
+    recursiveDownload(startPath) {
         console.log("Performing lookup from " + startPath);
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) => {
             request.get({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment' + startPath + "/",
-                jar: _this.cookieJar,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment' + startPath + "/",
+                jar: this.cookieJar,
                 headers: {
                     'Content-Type': 'text/plain',
-                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
-                    'x-authorization': _this.xauth
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
                 },
                 proxy: Utils.GetProxy()
-            }, function (err, httpResponse, body) {
-                Utils.ReducePromises(JSON.parse(body), function (inode) {
+            }, (err, httpResponse, body) => {
+                Utils.ReducePromises(JSON.parse(body), (inode) => {
                     if (startPath + "/" + inode['name'] == "/.c9" || startPath + "/" + inode['name'] == "/.vscode") {
                         return Promise.resolve();
                     }
-                    var workspacePath = _this.getFileWorkspacePath();
+                    let workspacePath = this.getFileWorkspacePath();
                     if (workspacePath == null) {
                         vscode.window.showWarningMessage("Could not find local directory to sync to");
                         return Promise.reject();
                     }
-                    var inodePath = path.join(workspacePath, startPath + "/" + inode['name']);
+                    let inodePath = path.join(workspacePath, startPath + "/" + inode['name']);
                     if (inode['mime'] == "inode/directory") {
                         if (!fs.existsSync(inodePath)) {
                             console.log("Creating the directory " + inodePath);
                             fs.mkdirSync(inodePath);
                         }
-                        return _this.recursiveDownload(startPath + "/" + inode['name']);
+                        return this.recursiveDownload(startPath + "/" + inode['name']);
                     }
                     else {
                         if (fs.existsSync(inodePath)) {
-                            var ftime = inode['mtime'];
-                            var fstat = fs.statSync(inodePath);
-                            var lftime = new Date(fstat['mtime']).getTime();
+                            let ftime = inode['mtime'];
+                            let fstat = fs.statSync(inodePath);
+                            let lftime = new Date(fstat['mtime']).getTime();
                             console.log(lftime);
                             console.log(ftime);
                             if (lftime + SYNC_TIME_VARIANCE > ftime) {
@@ -68,46 +67,44 @@ var FileManager = /** @class */ (function () {
                                 return Promise.resolve();
                             }
                         }
-                        return _this.downloadFile(startPath + "/" + inode['name'], inodePath, inode);
+                        return this.downloadFile(startPath + "/" + inode['name'], inodePath, inode);
                     }
                 })
                     .then(resolve, reject)
-                    .catch(function (err) {
+                    .catch((err) => {
                     console.error(err);
                 });
             });
         });
-    };
-    FileManager.prototype.stat = function (filename) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.eventEmitter.emit('send_ch4_message', ["stat", "/" + filename, {}, { $: 91 }]);
-            _this.eventEmitter.on('ch4_data', function (data, environmentId) {
+    }
+    stat(filename) {
+        return new Promise((resolve, reject) => {
+            this.eventEmitter.emit('send_ch4_message', ["stat", "/" + filename, {}, { $: 91 }]);
+            this.eventEmitter.on('ch4_data', (data, environmentId) => {
                 if (Array.isArray(data)) {
                     if (data.length > 2) {
                         if (data[0] == 91) {
-                            var contents = data[2];
+                            let contents = data[2];
                             resolve(contents);
                         }
                     }
                 }
             });
         });
-    };
-    FileManager.prototype.listdir = function (filename) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    }
+    listdir(filename) {
+        return new Promise((resolve, reject) => {
             if (!filename.endsWith("/")) {
                 filename += "/";
             }
             request.get({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
-                jar: _this.cookieJar,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
+                jar: this.cookieJar,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
-                    'x-authorization': _this.xauth
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
                 },
                 proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
@@ -115,7 +112,7 @@ var FileManager = /** @class */ (function () {
                 console.log(httpResponse);
                 console.log(body);
                 try {
-                    var parsed_body = JSON.parse(body);
+                    let parsed_body = JSON.parse(body);
                     resolve(parsed_body);
                 }
                 catch (err) {
@@ -123,19 +120,18 @@ var FileManager = /** @class */ (function () {
                 }
             });
         });
-    };
-    FileManager.prototype.downloadFile = function (filename, inodePath, inode) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    }
+    downloadFile(filename, inodePath, inode) {
+        return new Promise((resolve, reject) => {
             request.get({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
-                jar: _this.cookieJar,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
+                jar: this.cookieJar,
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
-                    'x-authorization': _this.xauth
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
                 },
                 proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
@@ -147,18 +143,17 @@ var FileManager = /** @class */ (function () {
                 resolve(body); // REMOVE ME
             });
         });
-    };
-    FileManager.prototype.uploadExistingFile = function (filename, content) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    }
+    uploadExistingFile(filename, content) {
+        return new Promise((resolve, reject) => {
             request.post({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
-                jar: _this.cookieJar,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
+                jar: this.cookieJar,
                 headers: {
                     'Content-Type': 'text/plain',
-                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
-                    'x-authorization': _this.xauth
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
                 },
                 body: content,
                 proxy: Utils.GetProxy()
@@ -168,32 +163,30 @@ var FileManager = /** @class */ (function () {
                 resolve();
             });
         });
-    };
-    FileManager.prototype.uploadRemoteFile = function (filename, content) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    }
+    uploadRemoteFile(filename, content) {
+        return new Promise((resolve, reject) => {
             request.put({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
-                jar: _this.cookieJar,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
+                jar: this.cookieJar,
                 headers: {
                     'Content-Type': 'text/plain',
-                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
-                    'x-authorization': _this.xauth
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
                 },
                 body: content,
                 proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
-                var _this = this;
                 console.log(httpResponse);
                 console.log(body);
                 if (httpResponse.statusCode == 429) { // retry with backoff
                     console.warn("retrying with backoff");
-                    var response = JSON.parse(httpResponse);
-                    setTimeout(function () {
-                        _this.uploadRemoteFile(filename, content).then(function () {
+                    let response = JSON.parse(httpResponse);
+                    setTimeout(() => {
+                        this.uploadRemoteFile(filename, content).then(() => {
                             resolve();
-                        }).catch(function (err) {
+                        }).catch(err => {
                             reject(err);
                         });
                     }, response.error.retryIn);
@@ -203,18 +196,17 @@ var FileManager = /** @class */ (function () {
                 }
             });
         });
-    };
-    FileManager.prototype.deleteRemoteFile = function (filename) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    }
+    deleteRemoteFile(filename) {
+        return new Promise((resolve, reject) => {
             request.delete({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment/' + filename,
-                jar: _this.cookieJar,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
+                jar: this.cookieJar,
                 headers: {
                     'Content-Type': 'text/plain',
-                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
-                    'x-authorization': _this.xauth
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
                 },
                 proxy: Utils.GetProxy()
             }, function (err, httpResponse, body) {
@@ -224,33 +216,32 @@ var FileManager = /** @class */ (function () {
                 resolve();
             });
         });
-    };
-    FileManager.prototype.recursiveUpload = function (startPath) {
-        var _this = this;
+    }
+    recursiveUpload(startPath) {
         console.log("Performing lookup from " + startPath);
-        return new Promise(function (resolve, reject) {
-            var workspacePath = _this.getFileWorkspacePath();
+        return new Promise((resolve, reject) => {
+            let workspacePath = this.getFileWorkspacePath();
             if (workspacePath == null) {
                 vscode.window.showWarningMessage("Could not find local directory to sync to");
                 reject("no local directory");
                 return;
             }
-            var inodePath = path.join(workspacePath, startPath + "/");
+            let inodePath = path.join(workspacePath, startPath + "/");
             request.get({
-                url: 'https://vfs.cloud9.' + _this.awsregion + '.amazonaws.com/vfs/' + _this.environmentId + '/environment' + Utils.EnsureLeadingSlash(startPath) + "/",
-                jar: _this.cookieJar,
+                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment' + Utils.EnsureLeadingSlash(startPath) + "/",
+                jar: this.cookieJar,
                 headers: {
                     'Content-Type': 'text/plain',
-                    'Origin': 'https://' + _this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + _this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + _this.environmentId,
-                    'x-authorization': _this.xauth
+                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
+                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
+                    'x-authorization': this.xauth
                 },
                 proxy: Utils.GetProxy()
-            }, function (err, httpResponse, body) {
+            }, (err, httpResponse, body) => {
                 console.log("REMOTE STAT FOR UPLOAD");
                 console.log(err);
                 console.log(body);
-                var remoteStats = [];
+                let remoteStats = [];
                 try {
                     remoteStats = JSON.parse(body);
                     if ('error' in remoteStats) {
@@ -263,7 +254,7 @@ var FileManager = /** @class */ (function () {
                     resolve();
                 }
                 console.log("About to do readdir on" + inodePath);
-                fs.readdir(inodePath, function (err, files) {
+                fs.readdir(inodePath, (err, files) => {
                     if (err)
                         reject(err);
                     console.log("Reading - " + inodePath);
@@ -272,41 +263,41 @@ var FileManager = /** @class */ (function () {
                         console.log("No files, skipping...");
                         resolve();
                     }
-                    Utils.ReducePromises(files, function (file) {
-                        var relativePath = path.join(startPath + "/", file);
+                    Utils.ReducePromises(files, (file) => {
+                        let relativePath = path.join(startPath + "/", file);
                         console.log("Processing file: " + relativePath);
                         if (relativePath == "/.c9" || relativePath == "/.vscode" || relativePath == "/.git") {
                             return Promise.resolve();
                         }
-                        return new Promise(function (resolve, reject) {
+                        return new Promise((resolve, reject) => {
                             var filepath = path.join(inodePath, file);
                             console.log("Beginning upload processing of " + filepath + " (" + relativePath + ")");
-                            fs.stat(filepath, function (err, fstat) {
+                            fs.stat(filepath, (err, fstat) => {
                                 if (fstat.isDirectory()) {
-                                    _this.eventEmitter.emit('send_ch4_message', ["mkdir", relativePath, {}, { "$": 33 }]);
-                                    _this.recursiveUpload(relativePath).then(function () {
+                                    this.eventEmitter.emit('send_ch4_message', ["mkdir", relativePath, {}, { "$": 33 }]);
+                                    this.recursiveUpload(relativePath).then(function () {
                                         resolve();
-                                    }).catch(function (err) {
+                                    }).catch((err) => {
                                         console.error(err);
                                     });
                                 }
                                 else if (fstat.isFile()) {
-                                    var ftime_1 = null;
-                                    var lftime = new Date(fstat['mtime']).getTime();
+                                    let ftime = null;
+                                    let lftime = new Date(fstat['mtime']).getTime();
                                     console.log("Checking remote stats now");
-                                    remoteStats.forEach(function (remoteStat) {
+                                    remoteStats.forEach(remoteStat => {
                                         if (remoteStat.name == relativePath) {
-                                            ftime_1 = remoteStat.mtime;
+                                            ftime = remoteStat.mtime;
                                         }
                                     });
-                                    console.log("ftime: " + ftime_1);
-                                    if (ftime_1 == null) {
+                                    console.log("ftime: " + ftime);
+                                    if (ftime == null) {
                                         console.log("Uploading new file");
-                                        _this.uploadRemoteFile(relativePath, fs.readFileSync(filepath));
+                                        this.uploadRemoteFile(relativePath, fs.readFileSync(filepath));
                                     }
-                                    else if (lftime > ftime_1 + SYNC_TIME_VARIANCE) {
+                                    else if (lftime > ftime + SYNC_TIME_VARIANCE) {
                                         console.log("Updating existing file");
-                                        _this.uploadExistingFile(relativePath, fs.readFileSync(filepath));
+                                        this.uploadExistingFile(relativePath, fs.readFileSync(filepath));
                                     }
                                     resolve();
                                 }
@@ -318,13 +309,12 @@ var FileManager = /** @class */ (function () {
                         });
                     })
                         .then(resolve, reject)
-                        .catch(function (err) {
+                        .catch((err) => {
                         console.error(err);
                     });
                 });
             });
         });
-    };
-    return FileManager;
-}());
+    }
+}
 exports.FileManager = FileManager;

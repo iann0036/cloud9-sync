@@ -1,34 +1,34 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var vscode = require("vscode");
-var Utils = require("./utils");
-var PendingEdit = /** @class */ (function () {
-    function PendingEdit() {
+const vscode = require("vscode");
+const Utils = require("./utils");
+class PendingEdit {
+    constructor() {
         this.action_list = [];
     }
-    PendingEdit.prototype.getActionListItemLength = function (i) {
+    getActionListItemLength(i) {
         if (this.action_list[i][0] == "r")
             return parseInt(this.action_list[i].substring(1));
         return (this.action_list[i].length - 1);
-    };
-    PendingEdit.prototype.splitActionListItem = function (i, cutpoint) {
+    }
+    splitActionListItem(i, cutpoint) {
         if (this.action_list[i][0] == "r") {
-            var new_item = "r" + (parseInt(this.action_list[i].substring(1)) - cutpoint);
+            let new_item = "r" + (parseInt(this.action_list[i].substring(1)) - cutpoint);
             this.action_list[i] = "r" + cutpoint;
             this.action_list.splice(i + 1, 0, new_item);
         }
         if (this.action_list[i][0] == "d") {
-            var new_item = "d" + (this.action_list[i].substring(1 + cutpoint));
+            let new_item = "d" + (this.action_list[i].substring(1 + cutpoint));
             this.action_list[i] = this.action_list[i].substring(0, cutpoint + 1);
             this.action_list.splice(i + 1, 0, new_item);
         }
         if (this.action_list[i][0] == "i") {
-            var new_item = "i" + (this.action_list[i].substring(1 + cutpoint));
+            let new_item = "i" + (this.action_list[i].substring(1 + cutpoint));
             this.action_list[i] = this.action_list[i].substring(0, cutpoint + 1);
             this.action_list.splice(i + 1, 0, new_item);
         }
-    };
-    PendingEdit.prototype.addEdit = function (r, d, i) {
+    }
+    addEdit(r, d, i) {
         console.log("Start Add Edit");
         if (this.action_list.length == 0) {
             if (r) {
@@ -42,51 +42,51 @@ var PendingEdit = /** @class */ (function () {
             }
         }
         else {
-            var offset = 0;
-            var index_1 = 0;
+            let offset = 0;
+            let index = 0;
             if (r) {
-                var array_split_done = false;
+                let array_split_done = false;
                 while (!array_split_done) {
-                    if (index_1 >= this.action_list.length) {
+                    if (index >= this.action_list.length) {
                         this.action_list.push("r" + (r - offset));
                         array_split_done = true;
                     }
-                    else if (this.getActionListItemLength(index_1) > (r - offset)) {
+                    else if (this.getActionListItemLength(index) > (r - offset)) {
                         // split
-                        this.splitActionListItem(index_1, (r - offset));
+                        this.splitActionListItem(index, (r - offset));
                         array_split_done = true;
                     }
                     else {
-                        offset += this.getActionListItemLength(index_1);
-                        index_1 += 1;
+                        offset += this.getActionListItemLength(index);
+                        index += 1;
                     }
                 }
             }
             if (d) {
-                index_1 += 1;
-                this.action_list.splice(index_1, 0, ("d" + d));
-                var remaining_delete_length = d.length;
-                var index_offset = 1;
-                while (remaining_delete_length > this.getActionListItemLength(index_1 + index_offset)) {
-                    this.action_list.splice(index_1 + index_offset, 1);
-                    remaining_delete_length -= this.getActionListItemLength(index_1 + index_offset);
+                index += 1;
+                this.action_list.splice(index, 0, ("d" + d));
+                let remaining_delete_length = d.length;
+                let index_offset = 1;
+                while (remaining_delete_length > this.getActionListItemLength(index + index_offset)) {
+                    this.action_list.splice(index + index_offset, 1);
+                    remaining_delete_length -= this.getActionListItemLength(index + index_offset);
                     index_offset += 1;
                 }
                 if (remaining_delete_length > 0) {
-                    if (this.action_list[index_1 + index_offset][0] == 'r') {
-                        this.action_list[index_1 + index_offset] = "r" + (parseInt(this.action_list[index_1 + index_offset].substring(1)) - remaining_delete_length);
+                    if (this.action_list[index + index_offset][0] == 'r') {
+                        this.action_list[index + index_offset] = "r" + (parseInt(this.action_list[index + index_offset].substring(1)) - remaining_delete_length);
                     }
                     else { // TODO: how does 2x 'd' work here?
-                        this.action_list[index_1 + index_offset] = this.action_list[index_1 + index_offset][0] + this.action_list[index_1 + index_offset].substring(remaining_delete_length + 1);
+                        this.action_list[index + index_offset] = this.action_list[index + index_offset][0] + this.action_list[index + index_offset].substring(remaining_delete_length + 1);
                     }
                 }
             }
             if (i) {
-                index_1 += 1;
-                this.action_list.splice(index_1, 0, ("i" + i));
+                index += 1;
+                this.action_list.splice(index, 0, ("i" + i));
             }
         }
-        var index = 0;
+        let index = 0;
         while (index < this.action_list.length) {
             if (this.action_list[index] == "r0") {
                 this.action_list.splice(index, 1); // remove r0's
@@ -96,11 +96,11 @@ var PendingEdit = /** @class */ (function () {
                 index += 1;
             }
         }
-    };
-    PendingEdit.prototype.getEditList = function (prev_doc) {
-        var ret = this.action_list;
-        var remaining_chars = prev_doc.length;
-        this.action_list.forEach(function (item) {
+    }
+    getEditList(prev_doc) {
+        let ret = this.action_list;
+        let remaining_chars = prev_doc.length;
+        this.action_list.forEach(item => {
             if (item[0] == "r") {
                 remaining_chars -= parseInt(item.substring(1));
             }
@@ -115,18 +115,16 @@ var PendingEdit = /** @class */ (function () {
             console.warn("Remaining chars = " + remaining_chars);
         }
         return ret;
-    };
-    PendingEdit.prototype.empty = function () {
+    }
+    empty() {
         this.action_list = [];
-    };
-    PendingEdit.prototype.isEmpty = function () {
+    }
+    isEmpty() {
         return this.action_list.length == 0;
-    };
-    return PendingEdit;
-}());
-var EditManager = /** @class */ (function () {
-    function EditManager(eventEmitter, websocketProvider) {
-        var _this = this;
+    }
+}
+class EditManager {
+    constructor(eventEmitter, websocketProvider) {
         this.eventEmitter = eventEmitter;
         this.websocketProvider = websocketProvider;
         this.pending_edit = new PendingEdit();
@@ -135,84 +133,80 @@ var EditManager = /** @class */ (function () {
         this.lastKnownLocalDocumentText = {};
         this.recent_edits = {};
         this.recent_edits_iterator = 0;
-        eventEmitter.on('ack', function (ack) {
-            if (_this.last_unacknowledged_edit != null) {
-                if (ack >= _this.last_unacknowledged_edit) {
-                    _this.last_unacknowledged_edit = null;
-                    _this.sendPendingEdits();
+        eventEmitter.on('ack', (ack) => {
+            if (this.last_unacknowledged_edit != null) {
+                if (ack >= this.last_unacknowledged_edit) {
+                    this.last_unacknowledged_edit = null;
+                    this.sendPendingEdits();
                 }
             }
         });
     }
-    EditManager.prototype.sendPendingEdits = function () {
-        var _this = this;
+    sendPendingEdits() {
         if (this.pending_edit.isEmpty()) {
             return;
         }
         console.log("SENDING PENDING EDITS");
-        setTimeout(function () {
-            var prev_text = _this.lastKnownRemoteDocumentText[_this.doc_path];
-            var edit = _this.pending_edit.getEditList(prev_text);
-            _this.pending_edit.empty();
-            _this.revNum += 1;
-            var doc = vscode.window.activeTextEditor.document; // TODO: Not compensating for multi-doc
-            var selection = vscode.window.activeTextEditor.selection;
-            var seq = _this.websocketProvider.send_ch4_message(["call", "collab", "send", [_this.vfsid, { "type": "EDIT_UPDATE", "data": { "docId": _this.doc_path, "op": edit, "revNum": _this.revNum, "selection": [
+        setTimeout(() => {
+            let prev_text = this.lastKnownRemoteDocumentText[this.doc_path];
+            let edit = this.pending_edit.getEditList(prev_text);
+            this.pending_edit.empty();
+            this.revNum += 1;
+            let doc = vscode.window.activeTextEditor.document; // TODO: Not compensating for multi-doc
+            let selection = vscode.window.activeTextEditor.selection;
+            let seq = this.websocketProvider.send_ch4_message(["call", "collab", "send", [this.vfsid, { "type": "EDIT_UPDATE", "data": { "docId": this.doc_path, "op": edit, "revNum": this.revNum, "selection": [
                                 selection.start.line,
                                 selection.start.character,
                                 selection.end.line,
                                 selection.end.character,
                                 selection.isReversed
                             ] } }]]);
-            _this.last_unacknowledged_edit = seq;
-            _this.lastKnownRemoteDocumentText[_this.doc_path] = _this.lastKnownLocalDocumentText[_this.doc_path];
+            this.last_unacknowledged_edit = seq;
+            this.lastKnownRemoteDocumentText[this.doc_path] = this.lastKnownLocalDocumentText[this.doc_path];
         }, 1); // TODO: Fix bad selection hack
-    };
-    EditManager.prototype.queuePendingEdit = function (r, d, i) {
+    }
+    queuePendingEdit(r, d, i) {
         this.pending_edit.addEdit(parseInt(r), d, i);
-    };
-    EditManager.prototype.addRemoteEdit = function (edit) {
-        var _this = this;
+    }
+    addRemoteEdit(edit) {
         this.recent_edits[this.recent_edits_iterator] = edit;
-        setTimeout(function (recent_edits_iterator) {
-            delete _this.recent_edits[recent_edits_iterator];
+        setTimeout((recent_edits_iterator) => {
+            delete this.recent_edits[recent_edits_iterator];
         }, 100, this.recent_edits_iterator); // TODO: Check/optimize this timeout
         this.recent_edits_iterator += 1;
-    };
-    EditManager.prototype.processTextDocumentChange = function (change, evt) {
-        var _this = this;
+    }
+    processTextDocumentChange(change, evt) {
         if (Object.keys(this.recent_edits).length === 0 && this.recent_edits.constructor === Object) {
             ; // no recent edits
         }
         else {
             for (var i in this.recent_edits) {
-                var text_edits = this.recent_edits[i];
-                text_edits.forEach(function (textedit) {
+                let text_edits = this.recent_edits[i];
+                text_edits.forEach(textedit => {
                     if (textedit.range.contains(evt.document.positionAt(change.rangeOffset))) {
                         console.log("RECENT EDIT DETECTED, IGNORING ONDIDCHANGE TRIGGER");
-                        delete _this.recent_edits[i];
+                        delete this.recent_edits[i];
                         return;
                     }
                 });
             }
         }
         console.log("NON REMOTE EDIT");
-        var path = Utils.GetShortFilePath(evt.document);
+        let path = Utils.GetShortFilePath(evt.document);
         this.doc_path = path; // TODO: Check for changes to this
-        var prevText = this.lastKnownLocalDocumentText[path];
+        let prevText = this.lastKnownLocalDocumentText[path];
         if (prevText === undefined) {
             console.warn("undefined lastKnownLocalDocumentText for: " + path);
             console.log(this.lastKnownLocalDocumentText);
             return;
         }
         this.lastKnownLocalDocumentText[path] = evt.document.getText();
-        var delText = prevText.substring(change.rangeOffset, change.rangeOffset + change.rangeLength);
+        let delText = prevText.substring(change.rangeOffset, change.rangeOffset + change.rangeLength);
         this.queuePendingEdit((change.rangeOffset != 0 ? change.rangeOffset.toString() : null), (change.rangeLength > 0 ? delText : null), (change.text.length > 0 ? change.text : null));
         console.log("Queued pending");
         if (this.last_unacknowledged_edit == null) {
             this.sendPendingEdits();
         }
-    };
-    return EditManager;
-}());
+    }
+}
 exports.EditManager = EditManager;

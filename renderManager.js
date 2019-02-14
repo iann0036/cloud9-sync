@@ -1,16 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var vscode = require("vscode");
-var Color = /** @class */ (function () {
-    function Color(r, g, b) {
+const vscode = require("vscode");
+class Color {
+    constructor(r, g, b) {
         this.r = r;
         this.g = g;
         this.b = b;
     }
-    return Color;
-}());
-var RenderManager = /** @class */ (function () {
-    function RenderManager(clientId, name, userManager, color) {
+}
+class RenderManager {
+    constructor(clientId, name, userManager, color) {
         this.clientId = clientId;
         this.name = name;
         this.userManager = userManager;
@@ -41,7 +40,7 @@ var RenderManager = /** @class */ (function () {
         });
         this.clientdecorator = null;
     }
-    RenderManager.prototype.getClientDecorator = function () {
+    getClientDecorator() {
         if (this.clientdecorator == null) {
             this.clientdecorator = vscode.window.createTextEditorDecorationType({
                 backgroundColor: 'rgba(' + this.color.r.toString() + ',' + this.color.g.toString() + ',' + this.color.b.toString() + ',1)',
@@ -60,20 +59,19 @@ var RenderManager = /** @class */ (function () {
             renderManager.clientdecorator = null;
         }, 2000, this);
         return this.clientdecorator;
-    };
-    RenderManager.prototype.getLatestPosition = function () {
-        var _this = this;
+    }
+    getLatestPosition() {
         this.position = this.userManager.getPosition(this.clientId);
         if (this.position) {
-            vscode.window.visibleTextEditors.forEach(function (editor) {
-                if (editor.document.uri.toString() == _this.position.documentUri) {
-                    _this.editor = editor;
+            vscode.window.visibleTextEditors.forEach((editor) => {
+                if (editor.document.uri.toString() == this.position.documentUri) {
+                    this.editor = editor;
                 }
             });
         }
         return this.position;
-    };
-    RenderManager.prototype.refresh = function () {
+    }
+    refresh() {
         if (!this.getLatestPosition())
             return;
         this.editor.setDecorations(this.rangedecorator, [{
@@ -95,14 +93,13 @@ var RenderManager = /** @class */ (function () {
                     new vscode.Range(this.position.range.start, this.position.range.start) :
                     new vscode.Range(this.position.range.end, this.position.range.end))
             }]);
-    };
-    RenderManager.prototype.destroy = function () {
+    }
+    destroy() {
         clearTimeout(this.clientdecoratortimeout);
         this.rangedecorator.dispose();
         this.cursordecorator.dispose();
         this.cursortopdecorator.dispose();
         this.clientdecorator.dispose();
-    };
-    return RenderManager;
-}());
+    }
+}
 exports.RenderManager = RenderManager;
