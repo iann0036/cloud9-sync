@@ -6,11 +6,11 @@
     "name": "Ian Mckay",
     "email": "cloud9sync@ianmckay.com.au"
   },
-  "version": "0.9.10",
+  "version": "0.10.0",
   "publisher": "iann0036",
   "icon": "resources/logo_128.png",
   "engines": {
-    "vscode": "^1.26.0"
+    "vscode": "^1.39.0"
   },
   "categories": [
     "Other"
@@ -266,30 +266,30 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./ || exit 0",
     "watch": "tsc -watch -p ./",
-    "postinstall": "node ./node_modules/vscode/bin/install",
     "test": "npm run compile && node ./node_modules/vscode/bin/test"
   },
   "devDependencies": {
-    "typescript": "^2.6.1",
-    "vscode": "^1.1.6",
+    "@types/mocha": "^2.2.42",
+    "@types/node": "^7.10.7",
     "eslint": "^4.11.0",
-    "@types/node": "^7.0.43",
-    "@types/mocha": "^2.2.42"
+    "typescript": "^2.9.2",
+    "vscode-test": "^1.2.0"
   },
   "dependencies": {
-    "aws4": "^1.7.0",
-    "color-string": "^1.5.2",
+    "@types/vscode": "^1.39.0",
+    "aws4": "^1.8.0",
+    "color-string": "^1.5.3",
     "cookie": "^0.3.1",
     "events": "^3.0.0",
-    "https-proxy-agent": "^2.2.1",
+    "https-proxy-agent": "^2.2.2",
     "net": "^1.0.2",
-    "request": "^2.87.0",
+    "request": "^2.88.0",
     "request-cookies": "^1.1.0",
     "text-encoding": "^0.6.4",
-    "tough-cookie": "^2.4.3",
+    "tough-cookie": "^2.5.0",
     "url": "^0.11.0",
-    "url-parse": "^1.4.3",
-    "ws": "^5.2.0",
-    "xml2js": "^0.4.19"
+    "url-parse": "^1.4.7",
+    "ws": "^5.2.2",
+    "xml2js": "^0.4.22"
   }
 }

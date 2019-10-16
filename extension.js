@@ -7,7 +7,6 @@ const cookie = require('cookie');
 const ViewProviders = require("./viewProviders");
 const Utils = require("./utils");
 const UserManager = require("./userManager");
-const TerminalManager = require("./terminalManager");
 const TerminalManagerV2 = require("./terminalManagerV2");
 const WebsocketProvider = require("./websocketProvider");
 const FileManager = require("./fileManager");
@@ -40,11 +39,7 @@ function activate(context) {
     userProvider = new ViewProviders.UserProvider();
     environmentProvider = new ViewProviders.EnvironmentProvider();
     chatProvider = new ViewProviders.ChatProvider();
-    //if (typeof vscode.window.createTerminalRenderer === "function") {
-        //terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
-    //} else {
-    terminalManager = new TerminalManager.TerminalManager(context.extensionPath, eventEmitter);
-    //}
+    terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
     websocketProvider = new WebsocketProvider.WebsocketProvider(eventEmitter);
     fileManager = new FileManager.FileManager(eventEmitter);
     editManager = new EditManager.EditManager(eventEmitter, websocketProvider);
@@ -148,7 +143,7 @@ function commandAddenvironment() {
                 extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
                 awsregion = extensionConfig.get('region');
 
-                let idemToken = Math.floor(Math.random() * 9999999999).toString();
+                let idemToken = "LiveSyncCloud9" + Math.floor(Math.random() * 9999999999).toString();
 
                 let awsreq = aws4.sign({
                     service: 'cloud9',
@@ -170,6 +165,8 @@ function commandAddenvironment() {
                     })
                 }, aws_creds);
 
+                vscode.window.setStatusBarMessage("Creating your environment...", 5000);
+
                 request.post({
                     url: "https://" + awsreq.hostname + awsreq.path,
                     headers: awsreq.headers,
@@ -181,6 +178,8 @@ function commandAddenvironment() {
                     console.log(response);
 
                     refreshEnvironmentsInSidebar();
+
+                    vscode.window.setStatusBarMessage("Environment created", 5000);
                 });
             }
         });

@@ -52,7 +52,7 @@ export class WebsocketProvider {
             let proxy = Utils.GetProxy();
             let agent;
             if (proxy) {
-                agent = new HttpsProxyAgent(Url.parse(proxy));
+                agent = new HttpsProxyAgent(proxy);
             } else {
                 agent = null;
             }

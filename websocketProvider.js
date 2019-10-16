@@ -4,7 +4,6 @@ const vscode = require("vscode");
 const WebSocket = require("ws");
 const Utils = require("./utils");
 const HttpsProxyAgent = require("https-proxy-agent");
-const Url = require("url");
 class WebsocketProvider {
     constructor(eventEmitter) {
         this.eventEmitter = eventEmitter;
@@ -32,7 +31,7 @@ class WebsocketProvider {
             let proxy = Utils.GetProxy();
             let agent;
             if (proxy) {
-                agent = new HttpsProxyAgent(Url.parse(proxy));
+                agent = new HttpsProxyAgent(proxy);
             }
             else {
                 agent = null;
