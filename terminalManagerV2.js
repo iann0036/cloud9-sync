@@ -95,7 +95,7 @@ class TerminalManager {
             //delete this.terminals[t];    TODO: Fix clean up of dict, if not shared
         });
     }
-    addTerminal(shared, vfsid) {
+    addTerminal(shared, vfsid, activeEnvironmentInfo) {
         this.vfsid = vfsid;
         this.lastTerminalIsShared = shared;
         let title = "Cloud9 Terminal";
@@ -107,7 +107,7 @@ class TerminalManager {
             onDidWrite: writeEmitter.event,
             open: () => {
                 this.lastTid = Math.floor(900 * Math.random()) + 100;
-                this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": "/home/ec2-user/environment", "cols": 125, "rows": 33, "name": "xterm-color", "base": "/home/ec2-user/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": true, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": 90 }]);
+                this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": activeEnvironmentInfo.environmentDir, "cols": 125, "rows": 33, "name": "xterm-color", "base": activeEnvironmentInfo.homeDir + "/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": true, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": 90 }]);
                 if (shared) {
                     this.eventEmitter.emit('send_ch4_message', ["call", "collab", "send", [this.vfsid, { "type": "GENERIC_BROADCAST", "data": { "exttype": "terminal_create", "tid": this.lastTid, "sender": this.vfsid } }]]);
                 }
@@ -127,7 +127,7 @@ class TerminalManager {
             'writeEmitter': writeEmitter
         };
         this.lastTid = Math.floor(900 * Math.random()) + 100;
-        this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": "/home/ec2-user/environment", "cols": 125, "rows": 33, "name": "xterm-color", "base": "/home/ec2-user/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": true, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": 90 }]);
+        this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": activeEnvironmentInfo.environmentDir, "cols": 125, "rows": 33, "name": "xterm-color", "base": activeEnvironmentInfo.homeDir + "/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": true, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": 90 }]);
     }
     closeTerminal(terminal) {
         terminal.terminal.dispose();

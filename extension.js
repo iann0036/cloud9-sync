@@ -30,6 +30,8 @@ let p, connectionPromise, watcherEventListeners = [];
 
 let cloud9fs;
 
+let activeEnvironmentInfo;
+
 function activate(context) {
     console.log('"cloud9-sync" is active');
 
@@ -209,13 +211,13 @@ function commandAddenvtoworkspace(ctx) {
 }
 
 function commandInitterminal() {
-    terminalManager.addTerminal(false, vfsid);
+    terminalManager.addTerminal(false, vfsid, activeEnvironmentInfo);
 }
 
 function commandInitsharedterminal() {
     vscode.window.showInformationMessage("Shared terminals will be presented to all users, regardless of permission level. Do you want to continue?", "Cancel", "OK").then((response) => {
         if (response == "OK") {
-            terminalManager.addTerminal(true, vfsid);
+            terminalManager.addTerminal(true, vfsid, activeEnvironmentInfo);
         }
     });
 }
@@ -1040,64 +1042,73 @@ function doConnect(environmentId) {
             path: '/',
             headers: {
             'Content-Type': 'application/x-amz-json-1.1',
-            'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.CreateEnvironmentToken'
+            'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.GetEnvironmentConfig'
             },
             body: '{"staticPrefix":"https://d3gac9ws0uwh3y.cloudfront.net/c9-4.1.0-d04633a7-ide","environmentId":"' + environmentId + '"}'
         }, aws_creds);
 
-        console.log("Requesting token...");
+        console.log("Requesting environment info...");
         request.post({
             url: "https://" + awsreq.hostname + awsreq.path,
             headers: awsreq.headers,
             body: awsreq.body,
             proxy: Utils.GetProxy()
-        }, function(err, httpResponse, env_token) {
-            let env_token_json = JSON.parse(env_token);
-            if ('Message' in env_token_json && !('authenticationTag' in env_token_json)) {
-                vscode.window.showWarningMessage(env_token_json['Message']);
-                commandDisconnect();
-                return;
-            }
-            
-            console.log("Logging in to primary gateway...");
-            request.post({
-                url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId,
-                jar: cookieJar,
+        }, function(err, httpResponse, env_config) {
+            activeEnvironmentInfo = JSON.parse(JSON.parse(env_config)['config']);
+            console.log(activeEnvironmentInfo);
+
+            let awsreq = aws4.sign({
+                service: 'cloud9',
+                region: awsregion,
+                method: 'POST',
+                path: '/',
                 headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.CreateEnvironmentToken'
                 },
-                body: '{"version":13,"token":' + env_token + '}',
+                body: '{"staticPrefix":"https://d3gac9ws0uwh3y.cloudfront.net/c9-4.1.0-d04633a7-ide","environmentId":"' + environmentId + '"}'
+            }, aws_creds);
+
+            console.log("Requesting token...");
+            request.post({
+                url: "https://" + awsreq.hostname + awsreq.path,
+                headers: awsreq.headers,
+                body: awsreq.body,
                 proxy: Utils.GetProxy()
-            }, function(err, httpResponse, body) {
-                console.log("Verifying gateway...");
-                console.log(err);
-                console.log(body);
-                xauth = httpResponse.headers['x-authorization'];
-                vfsid = JSON.parse(body)['vfsid'];
-                console.log("xauth: " + xauth);
-                console.log("VFSID: " + vfsid);
-
-                userManager.addIgnoredClient(vfsid);
-                editManager.vfsid = vfsid;
-
-                request.get({
-                    url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid,
+            }, function(err, httpResponse, env_token) {
+                let env_token_json = JSON.parse(env_token);
+                if ('Message' in env_token_json && !('authenticationTag' in env_token_json)) {
+                    vscode.window.showWarningMessage(env_token_json['Message']);
+                    commandDisconnect();
+                    return;
+                }
+                
+                console.log("Logging in to primary gateway...");
+                request.post({
+                    url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId,
                     jar: cookieJar,
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'Content-Type': 'application/json',
                         'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
-                        'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
-                        'x-authorization': xauth
+                        'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId
                     },
+                    body: '{"version":13,"token":' + env_token + '}',
                     proxy: Utils.GetProxy()
                 }, function(err, httpResponse, body) {
-                    // TODO: Generate t
+                    console.log("Verifying gateway...");
+                    console.log(err);
+                    console.log(body);
+                    xauth = httpResponse.headers['x-authorization'];
+                    vfsid = JSON.parse(body)['vfsid'];
+                    console.log("xauth: " + xauth);
+                    console.log("VFSID: " + vfsid);
+
+                    userManager.addIgnoredClient(vfsid);
+                    editManager.vfsid = vfsid;
+
                     request.get({
-                        url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling',
+                        url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid,
                         jar: cookieJar,
                         headers: {
                             'Accept': 'application/json',
@@ -1108,75 +1119,89 @@ function doConnect(environmentId) {
                         },
                         proxy: Utils.GetProxy()
                     }, function(err, httpResponse, body) {
-                        let buf = Buffer.from(body).slice(7);
-                        let bufasjson = JSON.parse(buf.toString());
-                        let sid = bufasjson['sid'];
-                        console.log("sid: " + sid);
-                        request.post({
-                            url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling&sid=' + sid,
+                        // TODO: Generate t
+                        request.get({
+                            url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling',
                             jar: cookieJar,
                             headers: {
                                 'Accept': 'application/json',
-                                'Content-Type': 'text/plain;charset=UTF-8',
+                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                 'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                                 'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                                 'x-authorization': xauth
                             },
-                            body: '46:4{"type":"handshake","seq":20000,"version":13}',
                             proxy: Utils.GetProxy()
                         }, function(err, httpResponse, body) {
-                            console.log("46 POST returned");
-                            request.get({
-                                url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling',
+                            let buf = Buffer.from(body).slice(7);
+                            let bufasjson = JSON.parse(buf.toString());
+                            let sid = bufasjson['sid'];
+                            console.log("sid: " + sid);
+                            request.post({
+                                url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling&sid=' + sid,
                                 jar: cookieJar,
                                 headers: {
                                     'Accept': 'application/json',
-                                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                    'Content-Type': 'text/plain;charset=UTF-8',
                                     'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                                     'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                                     'x-authorization': xauth
                                 },
+                                body: '46:4{"type":"handshake","seq":20000,"version":13}',
                                 proxy: Utils.GetProxy()
                             }, function(err, httpResponse, body) {
-                                console.log("46 GET Return:");
-                                console.log(body);
-                                /*let buf = Buffer.from(body).slice(7);
-                                let bufasjson = JSON.parse(buf.toString());
-                                let sid = bufasjson['sid'];*/
-                                request.post({
-                                    url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling&sid=' + sid,
+                                console.log("46 POST returned");
+                                request.get({
+                                    url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling',
                                     jar: cookieJar,
                                     headers: {
                                         'Accept': 'application/json',
-                                        'Content-Type': 'text/plain;charset=UTF-8',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                         'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                                         'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                                         'x-authorization': xauth
                                     },
-                                    body: '14:4{"ack":10000}',
                                     proxy: Utils.GetProxy()
                                 }, function(err, httpResponse, body) {
-                                    console.log("14:4 POST returned");
+                                    console.log("46 GET Return:");
                                     console.log(body);
+                                    /*let buf = Buffer.from(body).slice(7);
+                                    let bufasjson = JSON.parse(buf.toString());
+                                    let sid = bufasjson['sid'];*/
                                     request.post({
                                         url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling&sid=' + sid,
                                         jar: cookieJar,
                                         headers: {
+                                            'Accept': 'application/json',
                                             'Content-Type': 'text/plain;charset=UTF-8',
                                             'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
                                             'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
                                             'x-authorization': xauth
                                         },
-                                        body: '48:4{"ack":10000,"seq":20001,"d":["ready",{"$":1}]}',
+                                        body: '14:4{"ack":10000}',
                                         proxy: Utils.GetProxy()
                                     }, function(err, httpResponse, body) {
-                                        console.log("48:4 POST returned");
+                                        console.log("14:4 POST returned");
                                         console.log(body);
+                                        request.post({
+                                            url: 'https://vfs.cloud9.' + awsregion + '.amazonaws.com/vfs/' + environmentId + '/' + vfsid + '/socket/?authorization=' + xauth + '&EIO=3&transport=polling&sid=' + sid,
+                                            jar: cookieJar,
+                                            headers: {
+                                                'Content-Type': 'text/plain;charset=UTF-8',
+                                                'Origin': 'https://' + awsregion + '.console.aws.amazon.com',
+                                                'Referer': 'https://' + awsregion + '.console.aws.amazon.com/cloud9/ide/' + environmentId,
+                                                'x-authorization': xauth
+                                            },
+                                            body: '48:4{"ack":10000,"seq":20001,"d":["ready",{"$":1}]}',
+                                            proxy: Utils.GetProxy()
+                                        }, function(err, httpResponse, body) {
+                                            console.log("48:4 POST returned");
+                                            console.log(body);
 
-                                        fileManager.xauth = xauth;
-                                        fileManager.cookieJar = cookieJar;
-                                        fileManager.environmentId = environmentId;
-                                        websocketProvider.connect(vfsid, xauth, sid, cookieJar, environmentId);
+                                            fileManager.xauth = xauth;
+                                            fileManager.cookieJar = cookieJar;
+                                            fileManager.environmentId = environmentId;
+                                            websocketProvider.connect(vfsid, xauth, sid, cookieJar, environmentId, activeEnvironmentInfo);
+                                        });
                                     });
                                 });
                             });

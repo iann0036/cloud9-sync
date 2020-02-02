@@ -109,7 +109,7 @@ export class TerminalManager {
         });
     }
 
-    addTerminal(shared: boolean, vfsid: string): void {
+    addTerminal(shared: boolean, vfsid: string, activeEnvironmentInfo: any): void {
         this.vfsid = vfsid;
         this.lastTerminalIsShared = shared;
 
@@ -125,7 +125,7 @@ export class TerminalManager {
                 this.lastTid = Math.floor(900*Math.random()) + 100;
 
                 this.eventEmitter.emit('send_ch4_message',
-                    ["tmux","",{"cwd":"/home/ec2-user/environment","cols":125,"rows":33,"name":"xterm-color","base":"/home/ec2-user/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":true,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$":90}]
+                    ["tmux","",{"cwd":activeEnvironmentInfo.environmentDir,"cols":125,"rows":33,"name":"xterm-color","base":activeEnvironmentInfo.homeDir + "/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":true,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$":90}]
                 );
 
                 if (shared) {
@@ -155,7 +155,7 @@ export class TerminalManager {
         this.lastTid = Math.floor(900*Math.random()) + 100;
 
         this.eventEmitter.emit('send_ch4_message',
-            ["tmux","",{"cwd":"/home/ec2-user/environment","cols":125,"rows":33,"name":"xterm-color","base":"/home/ec2-user/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":true,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$":90}]
+            ["tmux","",{"cwd":activeEnvironmentInfo.environmentDir,"cols":125,"rows":33,"name":"xterm-color","base":activeEnvironmentInfo.homeDir + "/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":true,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$":90}]
         );
     }
 
