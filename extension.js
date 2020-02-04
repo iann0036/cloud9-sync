@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const request = require('request');
 const aws4 = require('aws4');
 const path = require('path');
+const fs = require('fs');
 const RenderManager = require("./renderManager");
 const cookie = require('cookie');
 const ViewProviders = require("./viewProviders");
@@ -1305,23 +1306,47 @@ function createWatchers() {
     });
     watcherEventListeners = [];
 
+    extensionConfig = vscode.workspace.getConfiguration('cloud9sync');
+    let syncStrategy = extensionConfig.get('syncStrategy');
+
     watcher = vscode.workspace.createFileSystemWatcher("**");
     watcher.ignoreChangeEvents = false;
     watcher.ignoreCreateEvents = false;
     watcher.ignoreDeleteEvents = false;
 
     watcher.onDidChange((event) => {
-        console.log(event);
-        //uploadExistingFile(event.fsPath, fs.readFileSync(event.fsPath));
+        if (syncStrategy == "bidirectional") {
+            console.log(event);
+            fs.stat(event.fsPath, (err, fstat) => {
+                if (fstat.isDirectory()) {
+                    fileManager.recursiveUpload(Utils.GetShortFilePathByUri(event));
+                    // fileManager.remoteRename available
+                    // TODO: Check
+                } else if (fstat.isFile()) {
+                    fileManager.uploadExistingFile(Utils.GetShortFilePathByUri(event), fs.readFileSync(event.fsPath));
+                }
+            });
+        }
     });
     watcher.onDidCreate((event) => {
-        console.log(event);
-        //uploadNewFile(event.fsPath, fs.readFileSync(event.fsPath));
-        // TODO: Handle dirs
+        if (syncStrategy == "bidirectional") {
+            console.log(event);
+            fs.stat(event.fsPath, (err, fstat) => {
+                if (fstat.isDirectory()) {
+                    fileManager.uploadNewFile(Utils.GetShortFilePathByUri(event) + "/");
+                } else if (fstat.isFile()) {
+                    fileManager.uploadNewFile(Utils.GetShortFilePathByUri(event));
+                    // TODO: Handle dirs
+                }
+            });
+        }
     });
     watcher.onDidDelete((event) => {
-        console.log(event);
-        //deleteRemoteFile(event.fsPath);
+        if (syncStrategy == "bidirectional") {
+            console.log(event);
+            fileManager.remoteDeleteDirectoryRecursive(Utils.GetShortFilePathByUri(event));
+            fileManager.deleteRemoteFile(Utils.GetShortFilePathByUri(event));
+        }
     });
 
     watcherEventListeners.push(watcher);

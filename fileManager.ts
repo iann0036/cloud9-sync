@@ -106,6 +106,49 @@ export class FileManager {
         });
     }
 
+    remoteDeleteDirectoryRecursive(filename) {
+        return new Promise((resolve, reject) => {
+            if (filename[0] != "/") {
+                filename = "/" + filename
+            }
+            this.eventEmitter.emit('send_ch4_message', ["rmdir", filename, {"recursive":true}, {$: 89}]);
+
+            this.eventEmitter.on('ch4_data', (data, environmentId) => {
+                if (Array.isArray(data)) {
+                    if (data.length>2) {
+                        if (data[0] == 89) {
+                            let contents = data[2];
+                            resolve(contents);
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    renameRemote(oldfilename, newfilename) {
+        return new Promise((resolve, reject) => {
+            if (oldfilename[0] != "/") {
+                oldfilename = "/" + oldfilename
+            }
+            if (newfilename[0] != "/") {
+                newfilename = "/" + newfilename
+            }
+            this.eventEmitter.emit('send_ch4_message', ["rename", newfilename, {"from": oldfilename}, {$: 88}]);
+
+            this.eventEmitter.on('ch4_data', (data, environmentId) => {
+                if (Array.isArray(data)) {
+                    if (data.length>2) {
+                        if (data[0] == 88) {
+                            let contents = data[2];
+                            resolve(contents);
+                        }
+                    }
+                }
+            });
+        });
+    }
+
     listdir(filename): Thenable<Object[]> {
         return new Promise((resolve, reject) => {
             if (!filename.endsWith("/")) {
@@ -160,27 +203,13 @@ export class FileManager {
         });
     }
 
-    uploadExistingFile(filename, content): Thenable<void> {
-        return new Promise((resolve, reject) => {
-            request.post({
-                url: 'https://vfs.cloud9.' + this.awsregion + '.amazonaws.com/vfs/' + this.environmentId + '/environment/' + filename,
-                jar: this.cookieJar,
-                headers: {
-                    'Content-Type': 'text/plain',
-                    'Origin': 'https://' + this.awsregion + '.console.aws.amazon.com',
-                    'Referer': 'https://' + this.awsregion + '.console.aws.amazon.com/cloud9/ide/' + this.environmentId,
-                    'x-authorization': this.xauth
-                },
-                body: content,
-                proxy: Utils.GetProxy()
-            }, function(err, httpResponse, body) {
-                console.log(httpResponse);
-                console.log(body);
-                resolve();
-            });
-        });
+    uploadNewFile(filename): Thenable<void> {
+        return this.uploadRemoteFile(filename, "");
     }
-    
+
+    uploadExistingFile(filename, content): Thenable<void> {
+        return this.uploadRemoteFile(filename, content);
+    }
     
     uploadRemoteFile(filename, content): Thenable<void> {
         return new Promise((resolve, reject) => {
@@ -199,10 +228,10 @@ export class FileManager {
                 console.log(httpResponse);
                 console.log(body);
 
-                if (httpResponse.statusCode == 429) { // retry with backoff
-                    console.warn("retrying with backoff");
+                let response = httpResponse; //JSON.parse(httpResponse);
 
-                    let response = JSON.parse(httpResponse);
+                if (response && response.statusCode == 429) { // retry with backoff
+                    console.warn("retrying with backoff");
                     setTimeout(() => {
                         this.uploadRemoteFile(filename, content).then(() => {
                             resolve();

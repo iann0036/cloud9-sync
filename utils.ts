@@ -137,6 +137,23 @@ export function ShortenFilePath(filePath): string {
     return EnsureLeadingSlash(filePath.replace(rootPath, "").replace("\\","/"));
 }
 
+export function GetShortFilePathByUri(uri: vscode.Uri): string {
+    let filePath = uri.path;
+    let rootPath = "";
+    
+    if (uri.scheme == "cloud9") {
+        filePath = "/" + uri.path.split("/").slice(2).join('/');
+    }
+
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+
+    return filePath.replace(rootPath, "").replace("\\","/");
+}
+
 export function GetShortFilePath(document: vscode.TextDocument): string {
     let filePath = document.fileName;
     let rootPath = "";

@@ -125,6 +125,20 @@ function ShortenFilePath(filePath) {
     return EnsureLeadingSlash(filePath.replace(rootPath, "").replace("\\", "/"));
 }
 exports.ShortenFilePath = ShortenFilePath;
+function GetShortFilePathByUri(uri) {
+    let filePath = uri.path;
+    let rootPath = "";
+    if (uri.scheme == "cloud9") {
+        filePath = "/" + uri.path.split("/").slice(2).join('/');
+    }
+    vscode.workspace.workspaceFolders.forEach(workspaceFolder => {
+        if (workspaceFolder.uri.scheme == "file") {
+            rootPath = workspaceFolder.uri.fsPath;
+        }
+    });
+    return filePath.replace(rootPath, "").replace("\\", "/");
+}
+exports.GetShortFilePathByUri = GetShortFilePathByUri;
 function GetShortFilePath(document) {
     let filePath = document.fileName;
     let rootPath = "";
