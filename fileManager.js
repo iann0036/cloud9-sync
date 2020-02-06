@@ -7,8 +7,9 @@ const path = require("path");
 const fs = require("fs");
 const SYNC_TIME_VARIANCE = 20000;
 class FileManager {
-    constructor(eventEmitter) {
+    constructor(eventEmitter, websocketProvider) {
         this.eventEmitter = eventEmitter;
+        this.websocketProvider = websocketProvider;
         this.awsregion = Utils.GetRegion();
     }
     getFileWorkspacePath() {
@@ -79,11 +80,12 @@ class FileManager {
     }
     stat(filename) {
         return new Promise((resolve, reject) => {
-            this.eventEmitter.emit('send_ch4_message', ["stat", "/" + filename, {}, { $: 91 }]);
+            let event_id = this.websocketProvider.next_event_id();
+            this.eventEmitter.emit('send_ch4_message', ["stat", "/" + filename, {}, { $: event_id }]);
             this.eventEmitter.on('ch4_data', (data, environmentId) => {
                 if (Array.isArray(data)) {
                     if (data.length > 2) {
-                        if (data[0] == 91) {
+                        if (data[0] == event_id) {
                             let contents = data[2];
                             resolve(contents);
                         }
@@ -97,11 +99,12 @@ class FileManager {
             if (filename[0] != "/") {
                 filename = "/" + filename;
             }
-            this.eventEmitter.emit('send_ch4_message', ["rmdir", filename, { "recursive": true }, { $: 89 }]);
+            let event_id = this.websocketProvider.next_event_id();
+            this.eventEmitter.emit('send_ch4_message', ["rmdir", filename, { "recursive": true }, { $: event_id }]);
             this.eventEmitter.on('ch4_data', (data, environmentId) => {
                 if (Array.isArray(data)) {
                     if (data.length > 2) {
-                        if (data[0] == 89) {
+                        if (data[0] == event_id) {
                             let contents = data[2];
                             resolve(contents);
                         }
@@ -118,11 +121,12 @@ class FileManager {
             if (newfilename[0] != "/") {
                 newfilename = "/" + newfilename;
             }
-            this.eventEmitter.emit('send_ch4_message', ["rename", newfilename, { "from": oldfilename }, { $: 88 }]);
+            let event_id = this.websocketProvider.next_event_id();
+            this.eventEmitter.emit('send_ch4_message', ["rename", newfilename, { "from": oldfilename }, { $: event_id }]);
             this.eventEmitter.on('ch4_data', (data, environmentId) => {
                 if (Array.isArray(data)) {
                     if (data.length > 2) {
-                        if (data[0] == 88) {
+                        if (data[0] == event_id) {
                             let contents = data[2];
                             resolve(contents);
                         }
@@ -299,7 +303,7 @@ class FileManager {
                             console.log("Beginning upload processing of " + filepath + " (" + relativePath + ")");
                             fs.stat(filepath, (err, fstat) => {
                                 if (fstat.isDirectory()) {
-                                    this.eventEmitter.emit('send_ch4_message', ["mkdir", relativePath, {}, { "$": 33 }]);
+                                    this.eventEmitter.emit('send_ch4_message', ["mkdir", relativePath, {}, { "$": this.websocketProvider.next_event_id() }]);
                                     this.recursiveUpload(relativePath).then(function () {
                                         resolve();
                                     }).catch((err) => {

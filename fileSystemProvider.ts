@@ -54,7 +54,8 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
 
     constructor(
         private fileManager: FileManager.FileManager,
-        private eventEmitter
+        private eventEmitter,
+        private websocketProvider
     ) {
         //this.createDirectory(vscode.Uri.parse(`cloud9:/123/`));
     }
@@ -182,7 +183,7 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
         let oldsplituri = oldUri.path.split("/");
         let newsplituri = newUri.path.split("/");
         
-        this.eventEmitter.emit("send_ch4_message", ["rename","/" + newsplituri.slice(2).join('/'),{"from":"/" + oldsplituri.slice(2).join('/')},{"$":92}]);
+        this.eventEmitter.emit("send_ch4_message", ["rename","/" + newsplituri.slice(2).join('/'),{"from":"/" + oldsplituri.slice(2).join('/')},{"$": this.websocketProvider.next_event_id()}]);
 
         this._fireSoon(
             { type: vscode.FileChangeType.Deleted, uri: oldUri },
@@ -208,7 +209,7 @@ export class Cloud9FileSystemProvider implements vscode.FileSystemProvider {
         return new Promise((resolve, reject) => {
             let splituri = uri.path.split("/");
 
-            this.eventEmitter.emit("send_ch4_message", ["mkdir","/" + splituri.slice(2).join('/'),{},{"$":93}]);
+            this.eventEmitter.emit("send_ch4_message", ["mkdir","/" + splituri.slice(2).join('/'),{},{"$": this.websocketProvider.next_event_id()}]);
 
             setTimeout(() => { // TODO: Fix dodgy timeout
                 this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri });

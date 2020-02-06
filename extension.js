@@ -42,9 +42,9 @@ function activate(context) {
     userProvider = new ViewProviders.UserProvider();
     environmentProvider = new ViewProviders.EnvironmentProvider();
     chatProvider = new ViewProviders.ChatProvider();
-    terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter);
     websocketProvider = new WebsocketProvider.WebsocketProvider(eventEmitter);
-    fileManager = new FileManager.FileManager(eventEmitter);
+    terminalManager = new TerminalManagerV2.TerminalManager(eventEmitter, websocketProvider);
+    fileManager = new FileManager.FileManager(eventEmitter, websocketProvider);
     editManager = new EditManager.EditManager(eventEmitter, websocketProvider);
 
     vscode.window.createTreeView('live-sync-for-aws-cloud9-view-2-users', {
@@ -63,7 +63,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.resync', commandResync));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.refreshenvironments', commandRefreshenvironments));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.initterminal', commandInitterminal));
-    context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.initsharedterminal', commandInitsharedterminal));
+    //context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.initsharedterminal', commandInitsharedterminal));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.sendchat', commandSendchat));
     //context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.syncupfsitem', commandSyncupfsitem));
     context.subscriptions.push(vscode.commands.registerCommand('cloud9sync.addenvironment', commandAddenvironment));
@@ -85,7 +85,7 @@ function activate(context) {
     });
     */
     
-    const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager, eventEmitter);
+    const cloud9fs = new FileSystemProvider.Cloud9FileSystemProvider(fileManager, eventEmitter, websocketProvider);
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider('cloud9', cloud9fs, { isCaseSensitive: true }));
 
     refreshEnvironmentsInSidebar().then(envs => {
@@ -448,7 +448,7 @@ function setEventEmitterEvents() {
                 }}]]
             );
             websocketProvider.send_ch4_message(
-                ["watch", Utils.GetShortFilePath(editor.document), {}, {$: 10}]
+                ["watch", Utils.GetShortFilePath(editor.document), {}, {$: websocketProvider.next_event_id()}]
             );
             visibleDocuments.push(editor.document.fileName);
         });
@@ -633,7 +633,7 @@ function setEventEmitterEvents() {
             }}]]
         );
         websocketProvider.send_ch4_message(
-            ["watch", event_data["docId"], {}, {$: 10}]
+            ["watch", event_data["docId"], {}, {$: websocketProvider.next_event_id()}]
         );
     });
     
@@ -1369,7 +1369,7 @@ function createWatchers() {
                     }}]]
                 );
                 websocketProvider.send_ch4_message(
-                    ["watch", newVisibleDocument, {}, {$: 10}]
+                    ["watch", newVisibleDocument, {}, {$: websocketProvider.next_event_id()}]
                 );
             }
         });

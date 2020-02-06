@@ -24,9 +24,10 @@ class Directory {
 }
 exports.Directory = Directory;
 class Cloud9FileSystemProvider {
-    constructor(fileManager, eventEmitter) {
+    constructor(fileManager, eventEmitter, websocketProvider) {
         this.fileManager = fileManager;
         this.eventEmitter = eventEmitter;
+        this.websocketProvider = websocketProvider;
         this.root = new Directory('');
         this.environmentConnections = {};
         // --- manage file events
@@ -145,7 +146,7 @@ class Cloud9FileSystemProvider {
     rename(oldUri, newUri, options) {
         let oldsplituri = oldUri.path.split("/");
         let newsplituri = newUri.path.split("/");
-        this.eventEmitter.emit("send_ch4_message", ["rename", "/" + newsplituri.slice(2).join('/'), { "from": "/" + oldsplituri.slice(2).join('/') }, { "$": 92 }]);
+        this.eventEmitter.emit("send_ch4_message", ["rename", "/" + newsplituri.slice(2).join('/'), { "from": "/" + oldsplituri.slice(2).join('/') }, { "$": this.websocketProvider.next_event_id() }]);
         this._fireSoon({ type: vscode.FileChangeType.Deleted, uri: oldUri }, { type: vscode.FileChangeType.Created, uri: newUri });
     }
     delete(uri) {
@@ -164,7 +165,7 @@ class Cloud9FileSystemProvider {
     createDirectory(uri) {
         return new Promise((resolve, reject) => {
             let splituri = uri.path.split("/");
-            this.eventEmitter.emit("send_ch4_message", ["mkdir", "/" + splituri.slice(2).join('/'), {}, { "$": 93 }]);
+            this.eventEmitter.emit("send_ch4_message", ["mkdir", "/" + splituri.slice(2).join('/'), {}, { "$": this.websocketProvider.next_event_id() }]);
             setTimeout(() => {
                 this._fireSoon({ type: vscode.FileChangeType.Changed, uri: uri }, { type: vscode.FileChangeType.Created, uri });
                 resolve();

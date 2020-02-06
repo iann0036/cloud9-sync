@@ -9,6 +9,11 @@ class WebsocketProvider {
         this.eventEmitter = eventEmitter;
         this.sessionState = "NOT_CONNECTED";
         this.awsregion = Utils.GetRegion();
+        this.event_id = 1;
+    }
+    next_event_id() {
+        this.event_id += 1;
+        return this.event_id;
     }
     disconnect() {
         clearInterval(this.ch2_interval);
@@ -98,47 +103,47 @@ class WebsocketProvider {
         console.log(this.activeEnvironmentInfo);
         console.log("Starting Websock Init");
         this.send_ch4_message([1, ["onData", "onEnd", "onClose", "onError", "write", "end", "destroy", "resume", "pause", "onExit", "onProcessClose", "onPtyKill", "onChange", "onEvent", "vfsDying"], false]);
-        this.send_ch4_message(["execFile", "node", { "args": ["-e", "log(Date.now())"], "encoding": "utf8" }, { "$": 2 }]);
-        this.send_ch4_message(["stat", "/.c9/builders", {}, { $: 3 }]);
-        this.send_ch4_message(["stat", this.activeEnvironmentInfo.installPath + "/bin/.c9gdbshim2", {}, { $: 4 }]);
-        this.send_ch4_message(["watch", this.activeEnvironmentInfo.environmentDir, {}, { $: 5 }]);
-        this.send_ch4_message(["watch", "/.c9/project.settings", {}, { $: 6 }]);
-        this.send_ch4_message(["watch", "/", {}, { $: 7 }]);
-        this.send_ch4_message(["execFile", "sudo", { "args": ["chown", this.activeEnvironmentInfo.project.remote.loginName, "-R", "/usr/local/rvm/gems"], "encoding": "utf8" }, { "$": 9 }]);
-        this.send_ch4_message(["stat", "/.eslintrc", {}, { $: 11 }]);
-        this.send_ch4_message(["execFile", "bash", { args: ["-c", "echo $C9_HOSTNAME"] }, { $: 12 }]);
-        this.send_ch4_message(["extend", "ping", { file: "c9.vfs.client/ping-service.js" }, { $: 13 }]);
-        this.send_ch4_message(["execFile", "bash", { args: ["-c", "echo $C9_HOSTNAME"] }, { $: 16 }]);
-        this.send_ch4_message(["extend", "ping", { file: "c9.vfs.client/ping-service.js" }, { $: 17 }]);
-        this.send_ch4_message(["extend", "collab", { file: "c9.ide.collab/server/collab-server.js" }, { $: 20 }]);
-        this.send_ch4_message(["spawn", this.activeEnvironmentInfo.homeDir + "/.c9/node/bin/node", { "args": [this.activeEnvironmentInfo.homeDir + "/.c9/node_modules/.bin/nak", "--json", "{\"pathToNakignore\":\"" + this.activeEnvironmentInfo.environmentDir + "/.c9/.nakignore\",\"ignoreCase\":true,\"literal\":true,\"pathInclude\":\"*.yml, *.yaml, *.json\",\"query\":\"AWS::Serverless\",\"path\":\"" + this.activeEnvironmentInfo.environmentDir + "/\",\"follow\":true,\"limit\":100000}"], "stdoutEncoding": "utf8", "stderrEncoding": "utf8", "stdinEncoding": "utf8" }, { "$": 21 }]);
-        this.send_ch4_message(["spawn", this.activeEnvironmentInfo.homeDir + "/.c9/node/bin/node", { "args": [this.activeEnvironmentInfo.homeDir + "/.c9/node_modules/.bin/nak", "--json", "{\"pathToNakignore\":\"" + this.activeEnvironmentInfo.environmentDir + "/.c9/.nakignore\",\"ignoreCase\":true,\"literal\":true,\"pathInclude\":\"*.yml, *.yaml, *.json\",\"query\":\"AWS::Serverless\",\"path\":\"" + this.activeEnvironmentInfo.environmentDir + "/\",\"follow\":true,\"limit\":100000}"], "stdoutEncoding": "utf8", "stderrEncoding": "utf8", "stdinEncoding": "utf8" }, { "$": 22 }]);
-        this.send_ch4_message(["call", "jsonalyzer_server", "init", [{ "environmentDir": this.activeEnvironmentInfo.environmentDir, "homeDir": this.activeEnvironmentInfo.homeDir, "packagePath": "plugins/c9.ide.language.jsonalyzer/jsonalyzer", "useCollab": true, "useSend": false, "maxServerCallInterval": 2000, "provides": ["jsonalyzer"], "consumes": ["Plugin", "commands", "language", "c9", "watcher", "save", "language.complete", "dialog.error", "ext", "collab", "collab.connect", "language.worker_util_helper", "error_handler", "installer"] }, { "$": 23 }]]);
-        this.send_ch4_message(["call", "bridge", "connect", [{ $: 24 }]]);
-        this.send_ch4_message(["call", "jsonalyzer_server", "init", [{ "environmentDir": this.activeEnvironmentInfo.environmentDir, "homeDir": this.activeEnvironmentInfo.homeDir, "packagePath": "plugins/c9.ide.language.jsonalyzer/jsonalyzer", "useCollab": true, "useSend": false, "maxServerCallInterval": 2000, "provides": ["jsonalyzer"], "consumes": ["Plugin", "commands", "language", "c9", "watcher", "save", "language.complete", "dialog.error", "ext", "collab", "collab.connect", "language.worker_util_helper", "error_handler", "installer"] }, { "$": 25 }]]);
+        this.send_ch4_message(["execFile", "node", { "args": ["-e", "log(Date.now())"], "encoding": "utf8" }, { "$": this.next_event_id() }]);
+        this.send_ch4_message(["stat", "/.c9/builders", {}, { $: this.next_event_id() }]);
+        this.send_ch4_message(["stat", this.activeEnvironmentInfo.installPath + "/bin/.c9gdbshim2", {}, { $: this.next_event_id() }]);
+        this.send_ch4_message(["watch", this.activeEnvironmentInfo.environmentDir, {}, { $: this.next_event_id() }]);
+        this.send_ch4_message(["watch", "/.c9/project.settings", {}, { $: this.next_event_id() }]);
+        this.send_ch4_message(["watch", "/", {}, { $: this.next_event_id() }]);
+        this.send_ch4_message(["execFile", "sudo", { "args": ["chown", this.activeEnvironmentInfo.project.remote.loginName, "-R", "/usr/local/rvm/gems"], "encoding": "utf8" }, { "$": this.next_event_id() }]);
+        this.send_ch4_message(["stat", "/.eslintrc", {}, { $: this.next_event_id() }]);
+        this.send_ch4_message(["execFile", "bash", { args: ["-c", "echo $C9_HOSTNAME"] }, { $: this.next_event_id() }]);
+        this.send_ch4_message(["extend", "ping", { file: "c9.vfs.client/ping-service.js" }, { $: this.next_event_id() }]);
+        this.send_ch4_message(["execFile", "bash", { args: ["-c", "echo $C9_HOSTNAME"] }, { $: this.next_event_id() }]);
+        this.send_ch4_message(["extend", "ping", { file: "c9.vfs.client/ping-service.js" }, { $: this.next_event_id() }]);
+        this.send_ch4_message(["extend", "collab", { file: "c9.ide.collab/server/collab-server.js" }, { $: this.next_event_id() }]);
+        this.send_ch4_message(["spawn", this.activeEnvironmentInfo.homeDir + "/.c9/node/bin/node", { "args": [this.activeEnvironmentInfo.homeDir + "/.c9/node_modules/.bin/nak", "--json", "{\"pathToNakignore\":\"" + this.activeEnvironmentInfo.environmentDir + "/.c9/.nakignore\",\"ignoreCase\":true,\"literal\":true,\"pathInclude\":\"*.yml, *.yaml, *.json\",\"query\":\"AWS::Serverless\",\"path\":\"" + this.activeEnvironmentInfo.environmentDir + "/\",\"follow\":true,\"limit\":100000}"], "stdoutEncoding": "utf8", "stderrEncoding": "utf8", "stdinEncoding": "utf8" }, { "$": this.next_event_id() }]);
+        this.send_ch4_message(["spawn", this.activeEnvironmentInfo.homeDir + "/.c9/node/bin/node", { "args": [this.activeEnvironmentInfo.homeDir + "/.c9/node_modules/.bin/nak", "--json", "{\"pathToNakignore\":\"" + this.activeEnvironmentInfo.environmentDir + "/.c9/.nakignore\",\"ignoreCase\":true,\"literal\":true,\"pathInclude\":\"*.yml, *.yaml, *.json\",\"query\":\"AWS::Serverless\",\"path\":\"" + this.activeEnvironmentInfo.environmentDir + "/\",\"follow\":true,\"limit\":100000}"], "stdoutEncoding": "utf8", "stderrEncoding": "utf8", "stdinEncoding": "utf8" }, { "$": this.next_event_id() }]);
+        this.send_ch4_message(["call", "jsonalyzer_server", "init", [{ "environmentDir": this.activeEnvironmentInfo.environmentDir, "homeDir": this.activeEnvironmentInfo.homeDir, "packagePath": "plugins/c9.ide.language.jsonalyzer/jsonalyzer", "useCollab": true, "useSend": false, "maxServerCallInterval": 2000, "provides": ["jsonalyzer"], "consumes": ["Plugin", "commands", "language", "c9", "watcher", "save", "language.complete", "dialog.error", "ext", "collab", "collab.connect", "language.worker_util_helper", "error_handler", "installer"] }, { "$": this.next_event_id() }]]);
+        this.send_ch4_message(["call", "bridge", "connect", [{ $: this.next_event_id() }]]);
+        this.send_ch4_message(["call", "jsonalyzer_server", "init", [{ "environmentDir": this.activeEnvironmentInfo.environmentDir, "homeDir": this.activeEnvironmentInfo.homeDir, "packagePath": "plugins/c9.ide.language.jsonalyzer/jsonalyzer", "useCollab": true, "useSend": false, "maxServerCallInterval": 2000, "provides": ["jsonalyzer"], "consumes": ["Plugin", "commands", "language", "c9", "watcher", "save", "language.complete", "dialog.error", "ext", "collab", "collab.connect", "language.worker_util_helper", "error_handler", "installer"] }, { "$": this.next_event_id() }]]);
         /*this.send_ch4_message(
-            ["stat", "/2", {}, {$: 26}]
+            ["stat", "/2", {}, {$: this.next_event_id()}]
         );
         this.send_ch4_message(
-            ["watch", "/deep/folder", {}, {$: 27}]
+            ["watch", "/deep/folder", {}, {$: this.next_event_id()}]
         );
         this.send_ch4_message(
-            ["watch", "/deep", {}, {$: 28}]
+            ["watch", "/deep", {}, {$: this.next_event_id()}]
         );*/
-        this.send_ch4_message(["call", "jsonalyzer_server", "init", [{ "environmentDir": this.activeEnvironmentInfo.environmentDir, "homeDir": this.activeEnvironmentInfo.homeDir, "packagePath": "plugins/c9.ide.language.jsonalyzer/jsonalyzer", "useCollab": true, "useSend": false, "maxServerCallInterval": 2000, "provides": ["jsonalyzer"], "consumes": ["Plugin", "commands", "language", "c9", "watcher", "save", "language.complete", "dialog.error", "ext", "collab", "collab.connect", "language.worker_util_helper", "error_handler", "installer"] }, { "$": 30 }]]);
-        this.send_ch4_message(["stat", "/", {}, { $: 31 }]);
+        this.send_ch4_message(["call", "jsonalyzer_server", "init", [{ "environmentDir": this.activeEnvironmentInfo.environmentDir, "homeDir": this.activeEnvironmentInfo.homeDir, "packagePath": "plugins/c9.ide.language.jsonalyzer/jsonalyzer", "useCollab": true, "useSend": false, "maxServerCallInterval": 2000, "provides": ["jsonalyzer"], "consumes": ["Plugin", "commands", "language", "c9", "watcher", "save", "language.complete", "dialog.error", "ext", "collab", "collab.connect", "language.worker_util_helper", "error_handler", "installer"] }, { "$": this.next_event_id() }]]);
+        this.send_ch4_message(["stat", "/", {}, { $: this.next_event_id() }]);
         this.connect_interval = setInterval(() => {
-            this.send_ch4_message(["call", "collab", "connect", [{ "basePath": this.activeEnvironmentInfo.environmentDir, "clientId": this.vfsid }, { "$": 32 }]]);
+            this.send_ch4_message(["call", "collab", "connect", [{ "basePath": this.activeEnvironmentInfo.environmentDir, "clientId": this.vfsid }, { "$": this.next_event_id() }]]);
         }, 3000);
     }
     postconnect() {
         console.log("POST CONNECT WEBSOCK INIT");
         clearInterval(this.connect_interval);
         this.ping_interval = setInterval(() => {
-            this.send_ch4_message(["call", "ping", "ping", ["serverTime", { "$": 32 }]]);
+            this.send_ch4_message(["call", "ping", "ping", ["serverTime", { "$": this.next_event_id() }]]);
         }, 10000);
-        this.send_ch4_message(["call", "ping", "ping", ["serverTime", { "$": 32 }]]);
-        this.send_ch4_message(["extend", "collab", { "file": "c9.ide.collab/server/collab-server.js" }, { "$": 32 }]);
+        this.send_ch4_message(["call", "ping", "ping", ["serverTime", { "$": this.next_event_id() }]]);
+        this.send_ch4_message(["extend", "collab", { "file": "c9.ide.collab/server/collab-server.js" }, { "$": this.next_event_id() }]);
         this.eventEmitter.emit('websocket_init_complete');
         this.sessionState = "CONNECTED";
     }

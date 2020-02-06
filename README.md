@@ -30,9 +30,7 @@ Similarly to connecting, you may disconnect by right-clicking on the connected e
 
 ## Using Remote Terminal
 
-You can right-click on your connected environment and click the `Create Terminal` option. This will open a new terminal connected to your AWS Cloud9 environment.
-
-If you choose the `Create Shared Terminal` option, your terminal will be available to other online clients.
+You can right-click on your connected environment and click the `Create Terminal` option. This will open a new terminal connected to your AWS Cloud9 environment. Note that your terminal session may be available to other clients.
 
 
 ## Settings

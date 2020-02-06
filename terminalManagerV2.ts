@@ -6,11 +6,14 @@ export class TerminalManager {
     private lastCreatedTerminal;
     private lastTerminalIsShared;
     private vfsid;
+    private terminal_creation_channels;
 
     constructor(
-        private eventEmitter
+        private eventEmitter,
+        private websocketProvider
     ) {
         this.terminals = {};
+        this.terminal_creation_channels = [];
         eventEmitter.on('terminal_process_created', (pty) => {
 
             if (!this.lastCreatedTerminal) { return; } // terminal already registered
@@ -32,11 +35,11 @@ export class TerminalManager {
             this.eventEmitter.emit('send_ch4_message',
                 ["tmux","",{"capturePane":{"start":-32768,"end":1000,"pane":"cloud9_terminal_" + this.lastTid + ":0.0"},"encoding":"utf8","name":"xterm-color","command":""},{"$":pty["id"]}]
             );
-            if (!this.lastTerminalIsShared) {
+            /*if (!this.lastTerminalIsShared) {
                 this.eventEmitter.emit('send_ch4_message', // detach other clients if not shared
                     ["write", pty["id"], ":detach -a\n"]
                 );
-            }
+            }*/
         });
 
         eventEmitter.on('ch4_data', (data, environmentId) => {
@@ -95,7 +98,7 @@ export class TerminalManager {
                                 }
                             }
                         } catch(err) {}
-                    } else if (data[0] == 90) { // terminal creation channel
+                    } else if (this.terminal_creation_channels.includes(data[0])) { // terminal creation channels
                         let contents = data[2];
 
                         eventEmitter.emit('terminal_process_created', contents["pty"]);
@@ -117,6 +120,8 @@ export class TerminalManager {
         if (shared) {
             title = "Cloud9 Terminal (shared)";
         }
+        let event_id = this.websocketProvider.next_event_id();
+        this.terminal_creation_channels.push(event_id);
 
         const writeEmitter = new vscode.EventEmitter<string>();
         let vspty: vscode.Pseudoterminal = {
@@ -125,7 +130,7 @@ export class TerminalManager {
                 this.lastTid = Math.floor(900*Math.random()) + 100;
 
                 this.eventEmitter.emit('send_ch4_message',
-                    ["tmux","",{"cwd":activeEnvironmentInfo.environmentDir,"cols":125,"rows":33,"name":"xterm-color","base":activeEnvironmentInfo.homeDir + "/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":true,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$":90}]
+                    ["tmux","",{"cwd":activeEnvironmentInfo.environmentDir,"cols":125,"rows":33,"name":"xterm-color","base":activeEnvironmentInfo.homeDir + "/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":false,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$": event_id}]
                 );
 
                 if (shared) {
@@ -155,7 +160,7 @@ export class TerminalManager {
         this.lastTid = Math.floor(900*Math.random()) + 100;
 
         this.eventEmitter.emit('send_ch4_message',
-            ["tmux","",{"cwd":activeEnvironmentInfo.environmentDir,"cols":125,"rows":33,"name":"xterm-color","base":activeEnvironmentInfo.homeDir + "/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":true,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$":90}]
+            ["tmux","",{"cwd":activeEnvironmentInfo.environmentDir,"cols":125,"rows":33,"name":"xterm-color","base":activeEnvironmentInfo.homeDir + "/.c9","attach":false,"session":"cloud9_terminal_" + this.lastTid,"output":false,"terminal":true,"detachOthers":false,"defaultEditor":false,"encoding":"utf8","command":"bash -l"},{"$": event_id}]
         );
     }
 

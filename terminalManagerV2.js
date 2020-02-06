@@ -2,9 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 class TerminalManager {
-    constructor(eventEmitter) {
+    constructor(eventEmitter, websocketProvider) {
         this.eventEmitter = eventEmitter;
+        this.websocketProvider = websocketProvider;
         this.terminals = {};
+        this.terminal_creation_channels = [];
         eventEmitter.on('terminal_process_created', (pty) => {
             if (!this.lastCreatedTerminal) {
                 return;
@@ -21,10 +23,11 @@ class TerminalManager {
             this.lastCreatedTerminal = null;
             this.eventEmitter.emit('send_ch4_message', ["resize", pty["pid"], 159, 33]);
             this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "capturePane": { "start": -32768, "end": 1000, "pane": "cloud9_terminal_" + this.lastTid + ":0.0" }, "encoding": "utf8", "name": "xterm-color", "command": "" }, { "$": pty["id"] }]);
-            if (!this.lastTerminalIsShared) {
+            /*if (!this.lastTerminalIsShared) {
                 this.eventEmitter.emit('send_ch4_message', // detach other clients if not shared
-                ["write", pty["id"], ":detach -a\n"]);
-            }
+                    ["write", pty["id"], ":detach -a\n"]
+                );
+            }*/
         });
         eventEmitter.on('ch4_data', (data, environmentId) => {
             if (Array.isArray(data)) {
@@ -84,7 +87,7 @@ class TerminalManager {
                         }
                         catch (err) { }
                     }
-                    else if (data[0] == 90) { // terminal creation channel
+                    else if (this.terminal_creation_channels.includes(data[0])) { // terminal creation channels
                         let contents = data[2];
                         eventEmitter.emit('terminal_process_created', contents["pty"]);
                     }
@@ -102,12 +105,14 @@ class TerminalManager {
         if (shared) {
             title = "Cloud9 Terminal (shared)";
         }
+        let event_id = this.websocketProvider.next_event_id();
+        this.terminal_creation_channels.push(event_id);
         const writeEmitter = new vscode.EventEmitter();
         let vspty = {
             onDidWrite: writeEmitter.event,
             open: () => {
                 this.lastTid = Math.floor(900 * Math.random()) + 100;
-                this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": activeEnvironmentInfo.environmentDir, "cols": 125, "rows": 33, "name": "xterm-color", "base": activeEnvironmentInfo.homeDir + "/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": true, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": 90 }]);
+                this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": activeEnvironmentInfo.environmentDir, "cols": 125, "rows": 33, "name": "xterm-color", "base": activeEnvironmentInfo.homeDir + "/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": false, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": event_id }]);
                 if (shared) {
                     this.eventEmitter.emit('send_ch4_message', ["call", "collab", "send", [this.vfsid, { "type": "GENERIC_BROADCAST", "data": { "exttype": "terminal_create", "tid": this.lastTid, "sender": this.vfsid } }]]);
                 }
@@ -127,7 +132,7 @@ class TerminalManager {
             'writeEmitter': writeEmitter
         };
         this.lastTid = Math.floor(900 * Math.random()) + 100;
-        this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": activeEnvironmentInfo.environmentDir, "cols": 125, "rows": 33, "name": "xterm-color", "base": activeEnvironmentInfo.homeDir + "/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": true, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": 90 }]);
+        this.eventEmitter.emit('send_ch4_message', ["tmux", "", { "cwd": activeEnvironmentInfo.environmentDir, "cols": 125, "rows": 33, "name": "xterm-color", "base": activeEnvironmentInfo.homeDir + "/.c9", "attach": false, "session": "cloud9_terminal_" + this.lastTid, "output": false, "terminal": true, "detachOthers": false, "defaultEditor": false, "encoding": "utf8", "command": "bash -l" }, { "$": event_id }]);
     }
     closeTerminal(terminal) {
         terminal.terminal.dispose();
