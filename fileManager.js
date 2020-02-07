@@ -11,6 +11,17 @@ class FileManager {
         this.eventEmitter = eventEmitter;
         this.websocketProvider = websocketProvider;
         this.awsregion = Utils.GetRegion();
+        this.callbackMapping = {};
+        this.eventEmitter.on('ch4_data', (data, environmentId) => {
+            if (Array.isArray(data)) {
+                if (data.length > 2) {
+                    if (data[0] in this.callbackMapping) {
+                        let contents = data[2];
+                        this.callbackMapping[data[0]](contents);
+                    }
+                }
+            }
+        });
     }
     getFileWorkspacePath() {
         if (vscode.workspace.workspaceFolders) {
@@ -82,16 +93,7 @@ class FileManager {
         return new Promise((resolve, reject) => {
             let event_id = this.websocketProvider.next_event_id();
             this.eventEmitter.emit('send_ch4_message', ["stat", "/" + filename, {}, { $: event_id }]);
-            this.eventEmitter.on('ch4_data', (data, environmentId) => {
-                if (Array.isArray(data)) {
-                    if (data.length > 2) {
-                        if (data[0] == event_id) {
-                            let contents = data[2];
-                            resolve(contents);
-                        }
-                    }
-                }
-            });
+            this.callbackMapping[event_id] = resolve;
         });
     }
     remoteDeleteDirectoryRecursive(filename) {
@@ -101,16 +103,7 @@ class FileManager {
             }
             let event_id = this.websocketProvider.next_event_id();
             this.eventEmitter.emit('send_ch4_message', ["rmdir", filename, { "recursive": true }, { $: event_id }]);
-            this.eventEmitter.on('ch4_data', (data, environmentId) => {
-                if (Array.isArray(data)) {
-                    if (data.length > 2) {
-                        if (data[0] == event_id) {
-                            let contents = data[2];
-                            resolve(contents);
-                        }
-                    }
-                }
-            });
+            this.callbackMapping[event_id] = resolve;
         });
     }
     renameRemote(oldfilename, newfilename) {
@@ -123,16 +116,7 @@ class FileManager {
             }
             let event_id = this.websocketProvider.next_event_id();
             this.eventEmitter.emit('send_ch4_message', ["rename", newfilename, { "from": oldfilename }, { $: event_id }]);
-            this.eventEmitter.on('ch4_data', (data, environmentId) => {
-                if (Array.isArray(data)) {
-                    if (data.length > 2) {
-                        if (data[0] == event_id) {
-                            let contents = data[2];
-                            resolve(contents);
-                        }
-                    }
-                }
-            });
+            this.callbackMapping[event_id] = resolve;
         });
     }
     listdir(filename) {

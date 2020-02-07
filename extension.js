@@ -208,7 +208,7 @@ function commandSendchat() {
 
 function commandAddenvtoworkspace(ctx) {
     vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('cloud9:/' + ctx.id + '/'), name: ctx.name + " - Cloud9" });
-    vscode.commands.executeCommand("workbench.action.reloadWindow");
+    //vscode.commands.executeCommand("workbench.action.reloadWindow");
 }
 
 function commandInitterminal() {
@@ -225,11 +225,14 @@ function commandInitsharedterminal() {
 
 function commandResync() {
     vscode.window.setStatusBarMessage('Resyncing...', 5000);
-    do_sync().then(function(){
+
+    let syncStrategy = extensionConfig.get('syncStrategy');
+
+    do_sync(syncStrategy).then(function(){
         vscode.window.setStatusBarMessage('Resync complete', 5000);
-    }.catch(function(){
+    }).catch(function(){
         vscode.window.setStatusBarMessage('Resync failed', 5000);
-    }));
+    });
 }
 
 function commandConnect(ctx) {
