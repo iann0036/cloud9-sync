@@ -899,40 +899,53 @@ function refreshEnvironmentsInSidebar() {
             }
 
             listEnvironments(awsregion, aws_creds, [], false).then(environmentIds => {
-                let awsreq = aws4.sign({
-                    service: 'cloud9',
-                    region: awsregion,
-                    method: 'POST',
-                    path: '/',
-                    headers: {
-                    'Content-Type': 'application/x-amz-json-1.1',
-                    'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.DescribeEnvironments'
-                    },
-                    body: '{"environmentIds":' + JSON.stringify(environmentIds) + '}'
-                }, aws_creds);
+                environmentProvider.clearAll(); // TODO: Make this do a merge instead of replace
 
-                request.post({
-                    url: "https://" + awsreq.hostname + awsreq.path,
-                    headers: awsreq.headers,
-                    body: awsreq.body,
-                    proxy: Utils.GetProxy()
-                }, function(err, httpResponse, env_token) {
-                    console.log(err);
-                    console.log(httpResponse);
-                    let response = JSON.parse(httpResponse['body']);
-                    if ('environments' in response) {
-                        environmentProvider.clearAll(); // TODO: Make this do a merge instead of replace
-                        response['environments'].forEach(env => {
-                            if (extensionConfig.get('environmentOwner') && extensionConfig.get('environmentOwner') != "") {
-                                if (env.ownerArn.includes(extensionConfig.get('environmentOwner'))) {
-                                    environmentProvider.addEnvironment(env);
-                                }
-                            } else {
-                                environmentProvider.addEnvironment(env);
+                let envPromises = [];
+
+                while (environmentIds.length) {
+                    let bodyEnvIds = JSON.stringify(environmentIds.splice(0, 25));
+
+                    envPromises.push(new Promise((resolve, reject) => {
+                        let awsreq = aws4.sign({
+                            service: 'cloud9',
+                            region: awsregion,
+                            method: 'POST',
+                            path: '/',
+                            headers: {
+                            'Content-Type': 'application/x-amz-json-1.1',
+                            'X-Amz-Target': 'AWSCloud9WorkspaceManagementService.DescribeEnvironments'
+                            },
+                            body: '{"environmentIds":' + bodyEnvIds + '}'
+                        }, aws_creds);
+
+                        request.post({
+                            url: "https://" + awsreq.hostname + awsreq.path,
+                            headers: awsreq.headers,
+                            body: awsreq.body,
+                            proxy: Utils.GetProxy()
+                        }, function(err, httpResponse, env_token) {
+                            console.log(err);
+                            console.log(httpResponse);
+                            let response = JSON.parse(httpResponse['body']);
+                            if ('environments' in response) {
+                                response['environments'].forEach(env => {
+                                    if (extensionConfig.get('environmentOwner') && extensionConfig.get('environmentOwner') != "") {
+                                        if (env.ownerArn.includes(extensionConfig.get('environmentOwner'))) {
+                                            environmentProvider.addEnvironment(env);
+                                        }
+                                    } else {
+                                        environmentProvider.addEnvironment(env);
+                                    }
+                                });
+                                resolve(response['environments']);
                             }
                         });
-                        resolve(response['environments']);
-                    }
+                    }));
+                }
+
+                Promise.all(envPromises).then(envListResults => {
+                    resolve([].concat.apply([], envListResults));
                 });
             });
         });
