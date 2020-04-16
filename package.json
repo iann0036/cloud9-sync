@@ -270,7 +270,7 @@
     "color-string": "^1.5.3",
     "cookie": "^0.3.1",
     "events": "^3.0.0",
-    "https-proxy-agent": "^2.2.2",
+    "https-proxy-agent": "^2.2.3",
     "net": "^1.0.2",
     "request": "^2.88.0",
     "request-cookies": "^1.1.0",
